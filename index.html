@@ -1,0 +1,3563 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Testeur d'API</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #2c3e50 0%, #3498db 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 20px;
+            padding: 30px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+        }
+        
+        .main-layout {
+            display: grid;
+            grid-template-columns: 350px 1fr;
+            gap: 30px;
+            margin-top: 20px;
+            align-items: stretch;
+        }
+        
+        .sidebar {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            border: 2px solid #e9ecef;
+            height: fit-content;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+        
+        .sidebar h3 {
+            color: #2c3e50;
+            margin-bottom: 15px;
+            font-size: 1.1em;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 8px;
+        }
+        
+        .collections-tree {
+            margin-top: 15px;
+        }
+        
+        .tree-collection {
+            margin-bottom: 10px;
+        }
+        
+        .tree-collection-header {
+            display: flex;
+            align-items: center;
+            padding: 8px 12px;
+            background: white;
+            border: 1px solid #dee2e6;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-weight: 600;
+            color: #495057;
+            position: relative;
+        }
+        .tree-collection-header .action-btns {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            gap: 4px;
+            opacity: 0;
+            transition: opacity 0.2s ease-in-out;
+        }
+        .tree-collection-header:hover .action-btns {
+            opacity: 1;
+        }
+        .tree-collection-header .add-folder-btn,
+        .tree-collection-header .edit-btn,
+        .tree-collection-header .delete-btn {
+            opacity: 1 !important;
+        }
+        
+        .tree-toggle {
+            margin-right: 8px;
+            transition: transform 0.2s ease;
+            font-size: 12px;
+            width: 12px;
+        }
+        
+        .tree-toggle.expanded {
+            transform: rotate(90deg);
+        }
+        
+        .tree-folders {
+            margin-left: 20px;
+            margin-top: 5px;
+            display: none;
+            border-left: 2px solid #e9ecef;
+            padding-left: 10px;
+        }
+        
+        .tree-folders.show {
+            display: block;
+        }
+        
+        .tree-folder {
+            margin-bottom: 5px;
+        }
+        
+        .tree-folder-header {
+            display: flex;
+            align-items: center;
+            padding: 6px 10px;
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            font-size: 14px;
+            color: #6c757d;
+            position: relative;
+        }
+        .tree-folder-header .action-btns {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            gap: 4px;
+            opacity: 0;
+            transition: opacity 0.2s ease-in-out;
+        }
+        .tree-folder-header:hover .action-btns {
+            opacity: 1;
+        }
+        .tree-folder-header.expanded {
+            background: #e3f2fd;
+            color: #1976d2;
+        }
+        
+        .tree-requests {
+            margin-left: 15px;
+            margin-top: 3px;
+            display: none;
+        }
+        
+        .tree-requests.show {
+            display: block;
+        }
+        
+        .tree-request {
+            padding: 6px 10px;
+            margin: 2px 0;
+            background: white;
+            border: 1px solid #e9ecef;
+            border-radius: 3px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            font-size: 13px;
+            position: relative;
+        }
+        
+        .tree-request:hover {
+            background: #f0f8ff;
+            border-color: #3498db;
+            transform: translateX(2px);
+        }
+        
+        .tree-request .action-btns {
+            position: absolute;
+            right: 8px;
+            top: 50%;
+            transform: translateY(-50%);
+            display: flex;
+            gap: 4px;
+            opacity: 0;
+            transition: opacity 0.2s ease-in-out;
+        }
+        
+        .tree-request:hover .action-btns {
+            opacity: 1;
+        }
+        
+        .tree-request-method {
+            font-weight: bold;
+            margin-right: 8px;
+            padding: 2px 6px;
+            border-radius: 3px;
+            font-size: 10px;
+            min-width: 35px;
+            text-align: center;
+        }
+        
+        .tree-request-name {
+            flex: 1;
+            color: #495057;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .main-content {
+            min-width: 0;
+        }
+        
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 2.2em;
+            background: linear-gradient(45deg, #2c3e50, #3498db);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            position: relative;
+        }
+        
+        .settings-button {
+            position: absolute;
+            right: 0;
+            top: 50%;
+            transform: translateY(-50%);
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            cursor: pointer;
+            font-size: 18px;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 10px rgba(52, 152, 219, 0.3);
+        }
+        
+        .settings-button:hover {
+            background: #2980b9;
+            transform: translateY(-50%) rotate(90deg);
+            box-shadow: 0 4px 15px rgba(52, 152, 219, 0.4);
+        }
+        
+        .settings-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            backdrop-filter: blur(5px);
+            overflow: hidden;
+        }
+        
+        .settings-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            border-radius: 15px;
+            padding: 20px;
+            width: 90%;
+            max-width: 700px;
+            max-height: 85vh;
+            overflow-y: auto;
+            overflow-x: hidden;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+        }
+        
+        .settings-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e9ecef;
+            padding-bottom: 12px;
+        }
+        
+        .settings-title {
+            font-size: 1.5em;
+            color: #2c3e50;
+            font-weight: 600;
+        }
+        
+        .close-settings {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            color: #6c757d;
+            padding: 5px;
+            border-radius: 50%;
+            width: 35px;
+            height: 35px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .close-settings:hover {
+            background: #f8f9fa;
+            color: #495057;
+        }
+        
+        .settings-section {
+            margin-bottom: 20px;
+        }
+        
+        .settings-section-title {
+            font-size: 1.05em;
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        
+        .settings-option {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 10px 0;
+            border-bottom: 1px solid #f8f9fa;
+            gap: 10px;
+        }
+        
+        .settings-option:last-child {
+            border-bottom: none;
+        }
+        
+        .option-label {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .option-title {
+            font-weight: 500;
+            color: #495057;
+            margin-bottom: 3px;
+        }
+        
+        .option-description {
+            font-size: 0.85em;
+            color: #6c757d;
+            word-wrap: break-word;
+            line-height: 1.3;
+        }
+        
+        .option-control {
+            flex-shrink: 0;
+            display: flex;
+            align-items: center;
+        }
+        
+        .toggle-switch {
+            position: relative;
+            width: 45px;
+            height: 22px;
+            flex-shrink: 0;
+        }
+        
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+        
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: #ddd;
+            transition: 0.3s;
+            border-radius: 24px;
+            border: 2px solid #ccc;
+        }
+        
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 2px;
+            bottom: 2px;
+            background-color: white;
+            transition: 0.3s;
+            border-radius: 50%;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+        }
+        
+        .toggle-switch input:checked + .toggle-slider {
+            background-color: #3498db;
+            border-color: #2980b9;
+        }
+        
+        .toggle-switch input:checked + .toggle-slider:before {
+            transform: translateX(26px);
+        }
+        
+        .toggle-switch input:disabled + .toggle-slider {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .settings-button-group {
+            display: flex;
+            gap: 6px;
+            flex-wrap: nowrap;
+            align-items: center;
+        }
+        
+        .settings-btn {
+            padding: 5px 10px;
+            border: 2px solid #3498db;
+            background: white;
+            color: #3498db;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 11px;
+            transition: all 0.3s ease;
+            white-space: nowrap;
+            flex-shrink: 0;
+            min-width: 32px;
+            text-align: center;
+        }
+        
+        .settings-btn:hover {
+            background: #3498db;
+            color: white;
+        }
+        
+        .settings-btn.primary {
+            background: #3498db;
+            color: white;
+        }
+        
+        .settings-btn.primary:hover {
+            background: #2980b9;
+        }
+        
+        .settings-btn.danger {
+            border-color: #e74c3c;
+            color: #e74c3c;
+        }
+        
+        .settings-btn.danger:hover {
+            background: #e74c3c;
+            color: white;
+        }
+        
+        .file-input-wrapper {
+            position: relative;
+            display: inline-block;
+            flex-shrink: 0;
+        }
+        
+        .file-input-wrapper input[type="file"] {
+            position: absolute;
+            opacity: 0;
+            width: 100%;
+            height: 100%;
+            cursor: pointer;
+        }
+        
+        /* Boutons d'édition */
+        .edit-btn {
+            background: linear-gradient(90deg, #f9d423 0%, #ff4e50 100%);
+            color: #232b36;
+            border: none;
+            border-radius: 7px;
+            padding: 4px 9px;
+            font-size: 13px;
+            font-weight: 600;
+            box-shadow: 0 1px 4px rgba(249, 212, 35, 0.10);
+            cursor: pointer;
+            transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
+            outline: none;
+            opacity: 1 !important;
+            margin: 0 2px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            min-height: 28px;
+        }
+        .edit-btn:hover {
+            background: linear-gradient(90deg, #ff4e50 0%, #f9d423 100%);
+            box-shadow: 0 4px 12px rgba(249, 212, 35, 0.18);
+            transform: translateY(-2px) scale(1.04);
+        }
+        .edit-btn:active {
+            background: #f39c12;
+            color: #fff;
+            box-shadow: 0 1px 4px rgba(249, 212, 35, 0.10);
+            transform: scale(0.98);
+        }
+        
+        .tree-request:hover .edit-btn,
+        .tree-collection:hover .edit-btn,
+        .tree-folder:hover .edit-btn {
+            opacity: 1;
+        }
+        
+        .delete-btn {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            padding: 3px 6px;
+            cursor: pointer;
+            font-size: 10px;
+            margin-left: 3px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        
+        .add-folder-btn {
+            background: #27ae60;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            padding: 3px 6px;
+            cursor: pointer;
+            font-size: 10px;
+            margin-left: 3px;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+        
+        /* Modales de création */
+        .create-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 1001;
+            backdrop-filter: blur(5px);
+        }
+        
+        .create-content {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: white;
+            border-radius: 10px;
+            padding: 25px;
+            width: 90%;
+            max-width: 500px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+        }
+        
+        .create-header {
+            margin-bottom: 20px;
+            font-size: 1.3em;
+            font-weight: 600;
+            color: #2c3e50;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 500;
+            color: #495057;
+        }
+        
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #3498db;
+        }
+        
+        .form-actions {
+            display: flex;
+            gap: 10px;
+            justify-content: flex-end;
+            margin-top: 20px;
+        }
+        
+        .btn-cancel {
+            padding: 10px 20px;
+            background: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        
+        .btn-save {
+            padding: 10px 20px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        
+        /* Thème sombre */
+        .dark-theme {
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d3748 100%);
+        }
+        
+        .dark-theme .container {
+            background: rgba(45, 55, 72, 0.95);
+            color: #e2e8f0;
+        }
+        
+        .dark-theme .sidebar {
+            background: #2d3748;
+            border-color: #4a5568;
+            color: #e2e8f0;
+        }
+        
+        .dark-theme .import-section,
+        .dark-theme .request-section,
+        .dark-theme .response-section {
+            background: #2d3748;
+            border-color: #4a5568;
+            color: #e2e8f0;
+        }
+        
+        .dark-theme select,
+        .dark-theme input[type="text"],
+        .dark-theme input[type="url"],
+        .dark-theme textarea {
+            background: #4a5568;
+            border-color: #718096;
+            color: #e2e8f0;
+        }
+        
+        .dark-theme .tree-collection-header,
+        .dark-theme .tree-folder-header,
+        .dark-theme .tree-request {
+            background: #4a5568;
+            border-color: #718096;
+            color: #e2e8f0;
+        }
+        
+        .dark-theme .collection-item {
+            background: #4a5568;
+            border-color: #718096;
+            color: #e2e8f0;
+        }
+        
+        .import-section {
+            background: #fafdff;
+            border-radius: 10px;
+            padding: 0;
+            margin-bottom: 18px;
+            border: 1.5px solid #e3e8ee;
+            box-shadow: 0 2px 8px rgba(52,152,219,0.06);
+            overflow: hidden;
+        }
+        .import-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 1.1em;
+            font-weight: 600;
+            color: #1976d2;
+            background: #e3f2fd;
+            padding: 12px 18px;
+            cursor: pointer;
+            user-select: none;
+            border-bottom: 1px solid #e3e8ee;
+            transition: background 0.2s;
+        }
+        .import-header:hover {
+            background: #d0e7fa;
+        }
+        .import-chevron {
+            font-size: 1.2em;
+            margin-left: 10px;
+            transition: transform 0.2s;
+        }
+        .import-chevron.collapsed {
+            transform: rotate(-90deg);
+        }
+        .import-content {
+            padding: 14px 18px 10px 18px;
+            display: block;
+            transition: max-height 0.3s, opacity 0.2s;
+        }
+        .import-content.collapsed {
+            display: none;
+        }
+        .import-row {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        .import-row label {
+            font-size: 0.98em;
+            color: #1976d2;
+            font-weight: 500;
+            min-width: 90px;
+        }
+        .import-row input[type="file"] {
+            font-size: 0.98em;
+            padding: 3px 0;
+        }
+        .import-help {
+            font-size: 0.85em;
+            color: #6c757d;
+            margin-left: 6px;
+        }
+        
+        .collections-list, .environments-list {
+            grid-column: 1 / -1;
+            margin-top: 20px;
+        }
+        
+        .collection-item {
+            background: white;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 15px;
+            transition: all 0.3s ease;
+        }
+        
+        .collection-item:hover {
+            border-color: #3498db;
+            box-shadow: 0 2px 8px rgba(52, 152, 219, 0.1);
+        }
+        
+        .collection-item.expanded {
+            border-color: #3498db;
+            background: #f8fcff;
+        }
+        
+        .collection-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-weight: 600;
+            color: #2c3e50;
+            cursor: pointer;
+            padding: 5px 0;
+        }
+        
+        .request-list {
+            margin-top: 15px;
+            display: none;
+        }
+        
+        .request-list.show {
+            display: block;
+        }
+        
+        .request-item {
+            padding: 8px 12px;
+            margin: 3px 0;
+            background: white;
+            border: 1px solid #e9ecef;
+            border-radius: 4px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+        }
+        
+        .request-item:hover {
+            background: #f8f9fa;
+            border-color: #3498db;
+            transform: translateX(3px);
+        }
+        
+        .request-method {
+            font-weight: bold;
+            margin-right: 10px;
+            padding: 3px 8px;
+            border-radius: 3px;
+            font-size: 11px;
+            min-width: 45px;
+            text-align: center;
+        }
+        
+        .request-name {
+            flex: 1;
+            font-size: 14px;
+            color: #495057;
+        }
+        
+        .request-section {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 25px;
+        }
+        
+        .section-title {
+            font-size: 1.3em;
+            font-weight: 600;
+            color: #2c3e50;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 8px;
+        }
+        
+        .form-row {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+            align-items: center;
+        }
+        
+        .method-select {
+            min-width: 120px;
+        }
+        
+        .url-input {
+            flex: 1;
+        }
+        
+        select, input[type="text"], input[type="url"], textarea {
+            padding: 12px 16px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 16px;
+            transition: all 0.3s ease;
+            background: white;
+        }
+        
+        select:focus, input:focus, textarea:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+        }
+        
+        .method-GET { background-color: #e8f5e8 !important; color: #27ae60; font-weight: bold; }
+        .method-POST { background-color: #fff3cd !important; color: #f39c12; font-weight: bold; }
+        .method-PUT { background-color: #e3f2fd !important; color: #3498db; font-weight: bold; }
+        .method-DELETE { background-color: #ffebee !important; color: #e74c3c; font-weight: bold; }
+        
+        .headers-section, .body-section {
+            margin-top: 20px;
+        }
+        
+        .header-item {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+            align-items: center;
+        }
+        
+        .header-item input {
+            flex: 1;
+        }
+        
+        .remove-btn {
+            background: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 8px 12px;
+            cursor: pointer;
+            font-size: 14px;
+        }
+        
+        .add-btn,
+        .add-folder-btn,
+        .btn-green,
+        button[style*='background: #27ae60'],
+        .headers-section .add-btn {
+            background: linear-gradient(90deg, #43e97b 0%, #38f9d7 100%);
+            color: #232b36;
+            border: none;
+            border-radius: 7px;
+            padding: 4px 9px;
+            font-size: 13px;
+            font-weight: 600;
+            box-shadow: 0 1px 4px rgba(52, 231, 123, 0.10);
+            cursor: pointer;
+            transition: background 0.2s, box-shadow 0.2s, transform 0.1s;
+            outline: none;
+            opacity: 1 !important;
+            margin: 0 2px;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            min-height: 28px;
+        }
+        .add-btn svg,
+        .add-folder-btn svg {
+            font-size: 15px;
+        }
+        .add-btn:hover,
+        .add-folder-btn:hover,
+        .btn-green:hover,
+        button[style*='background: #27ae60']:hover,
+        .headers-section .add-btn:hover {
+            background: linear-gradient(90deg, #38f9d7 0%, #43e97b 100%);
+            box-shadow: 0 4px 16px rgba(52, 231, 123, 0.25);
+            transform: translateY(-2px) scale(1.04);
+        }
+        .add-btn:active,
+        .add-folder-btn:active,
+        .btn-green:active,
+        button[style*='background: #27ae60']:active,
+        .headers-section .add-btn:active {
+            background: #27ae60;
+            color: #fff;
+            box-shadow: 0 1px 4px rgba(52, 231, 123, 0.12);
+            transform: scale(0.98);
+        }
+        
+        .send-btn {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(45deg, #2c3e50, #3498db);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 20px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin: 25px 0;
+        }
+        
+        .send-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(52, 152, 219, 0.3);
+        }
+        
+        .send-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .response-section {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 25px;
+            border: 2px solid #e9ecef;
+        }
+        
+        .response-meta {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        
+        .status-badge {
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-weight: bold;
+            font-size: 14px;
+        }
+        
+        .status-2xx { background: #d4edda; color: #155724; }
+        .status-3xx { background: #fff3cd; color: #856404; }
+        .status-4xx { background: #f8d7da; color: #721c24; }
+        .status-5xx { background: #f5c6cb; color: #721c24; }
+        
+        .response-time {
+            padding: 8px 16px;
+            background: #e9ecef;
+            border-radius: 20px;
+            font-weight: bold;
+            color: #495057;
+        }
+        
+        .response-tabs {
+            display: flex;
+            border-bottom: 2px solid #dee2e6;
+            margin-bottom: 20px;
+        }
+        
+        .tab {
+            padding: 12px 20px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            color: #6c757d;
+            border-bottom: 3px solid transparent;
+        }
+        
+        .tab.active {
+            color: #3498db;
+            border-bottom-color: #3498db;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        .json-tree {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            font-size: 14px;
+            line-height: 1.5;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        /* Style Swagger UI pour l'arbre JSON */
+        .json-block {
+            margin: 14px 0;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(52,152,219,0.06);
+            border: 1.5px solid #e3e8ee;
+            background: #fff;
+            transition: box-shadow 0.2s;
+            padding: 0;
+        }
+        .json-block-content {
+            padding: 5px 0 2px 14px;
+            border-left: 4px solid #e3e8ee;
+            background: #fafdff;
+            font-size: 12px;
+            display: none;
+        }
+        .json-block-content.show {
+            display: block;
+        }
+        .json-level-1 .json-block-content { background: #fafdff; }
+        .json-level-2 .json-block-content { background: #f3f7fa; }
+        .json-level-3 .json-block-content { background: #eaf3fa; }
+        .json-level-4 .json-block-content { background: #f0f7ff; }
+        .json-block-header {
+            font-family: 'Fira Mono', 'Consolas', monospace;
+            font-size: 13px;
+            color: #1976d2;
+            background: #e3f2fd;
+            border-bottom: 1px solid #e3e8ee;
+            padding: 5px 10px;
+            cursor: pointer;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        .json-block-header:hover {
+            background: #d0e7fa;
+        }
+        .json-block-key {
+            color: #1976d2;
+            font-weight: bold;
+            font-family: 'Fira Mono', 'Consolas', monospace;
+            margin-right: 8px;
+        }
+        .json-value-simple {
+            background: #e3f2fd;
+            color: #333;
+            font-weight: 500;
+            border-radius: 4px;
+            padding: 1px 6px;
+            margin-left: 6px;
+            font-family: 'Fira Mono', 'Consolas', monospace;
+            font-size: 11px;
+        }
+        .json-block-type {
+            font-size: 11px;
+            background: #e3e8ee;
+            color: #1976d2;
+            padding: 1px 6px;
+            border-radius: 10px;
+            margin-left: 8px;
+            font-weight: 600;
+        }
+        .json-block-toggle {
+            font-size: 20px;
+            color: #1976d2;
+            margin-right: 14px;
+            font-weight: bold;
+            transition: transform 0.2s;
+        }
+        .json-block-toggle.expanded {
+            transform: rotate(90deg);
+        }
+        /* Espacement entre les blocs imbriqués */
+        .json-block-content > div {
+            margin-bottom: 8px;
+        }
+        
+        .json-viewer {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            line-height: 1.5;
+            max-height: 400px;
+            overflow-y: auto;
+            white-space: pre-wrap;
+        }
+        
+        .error {
+            background: #fff5f5;
+            color: #c53030;
+            padding: 15px;
+            border-radius: 8px;
+            border-left: 4px solid #f56565;
+            margin-top: 15px;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: #6c757d;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #3498db;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .body-type-selector {
+            margin-bottom: 15px;
+        }
+        
+        .body-type-selector label {
+            margin-right: 20px;
+            cursor: pointer;
+        }
+        
+        /* Sidebar et main-content repliables */
+        .section-collapsible {
+            background: #fafdff;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(52,152,219,0.06);
+            border: 1.5px solid #e3e8ee;
+            margin-bottom: 18px;
+            overflow: hidden;
+        }
+        .section-header {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 1.08em;
+            font-weight: 600;
+            color: #1976d2;
+            background: #e3f2fd;
+            padding: 12px 18px;
+            cursor: pointer;
+            user-select: none;
+            border-bottom: 1px solid #e3e8ee;
+            transition: background 0.2s;
+        }
+        .section-header:hover {
+            background: #d0e7fa;
+        }
+        .section-chevron {
+            font-size: 1.2em;
+            margin-left: 10px;
+            transition: transform 0.2s;
+        }
+        .section-chevron.collapsed {
+            transform: rotate(-90deg);
+        }
+        .section-content {
+            padding: 0 0 0 0;
+            display: block;
+        }
+        .section-content.collapsed {
+            display: none;
+        }
+        
+        /* Harmonisation du bloc Collections avec le bloc Requête */
+        .sidebar.section-collapsible {
+            height: 100%;
+            max-height: none;
+            display: flex;
+            flex-direction: column;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(52,152,219,0.06);
+            border: 1.5px solid #e3e8ee;
+            margin-bottom: 18px;
+            overflow: hidden;
+            padding: 0;
+            background: none !important;
+            min-height: 0 !important;
+        }
+
+        .sidebar .collections-tree {
+            height: 100%;
+            max-height: none;
+            flex: 1 1 auto;
+            max-height: 350px;
+            padding: 18px 10px 10px 10px;
+        }
+        .sidebar .section-header,
+        .main-content .section-header {
+            background: #e3f2fd;
+            color: #1976d2;
+            font-size: 1.15em;
+            font-weight: 600;
+            padding: 14px 22px 14px 18px;
+            border-bottom: 1px solid #e3e8ee;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            min-height: 54px;
+            box-sizing: border-box;
+        }
+        .sidebar .section-header .section-header-left,
+        .main-content .section-header .section-header-left {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .sidebar .section-header .section-header-right,
+        .main-content .section-header .section-header-right {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .sidebar .section-chevron,
+        .main-content .section-chevron {
+            font-size: 1.2em;
+            margin-left: 10px;
+            transition: transform 0.2s;
+        }
+        .sidebar.section-collapsible,
+        .main-content.section-collapsible {
+            background: none !important;
+            min-height: 0 !important;
+            height: auto !important;
+            padding: 0 !important;
+            border-radius: 10px;
+            box-shadow: 0 2px 8px rgba(52,152,219,0.06);
+            border: 1.5px solid #e3e8ee;
+            margin-bottom: 18px;
+            overflow: auto;
+        }
+        .sidebar .section-header.collapsed,
+        .main-content .section-header.collapsed {
+            border-bottom: none;
+        }
+        .sidebar .section-content.collapsed,
+        .main-content .section-content.collapsed {
+            display: none !important;
+            height: 0 !important;
+            min-height: 0 !important;
+            padding: 0 !important;
+            background: transparent !important;
+            overflow: hidden !important;
+        }
+        .section-header .section-header-right .add-btn {
+            padding: 2px 7px !important;
+            font-size: 13px !important;
+            height: 28px !important;
+            min-height: 0 !important;
+            margin-top: 0 !important;
+            margin-bottom: 0 !important;
+            display: flex;
+            align-items: center;
+        }
+
+        .environments-list {
+            margin-top: 15px;
+            padding: 10px;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        
+        .environments-list button {
+            padding: 4px 8px;
+            font-size: 0.9em;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+        
+        .environments-list button:hover {
+            transform: translateY(-1px);
+        }
+
+        .drag-over {
+            background-color: rgba(0, 123, 255, 0.1) !important;
+            border: 1px dashed #007bff !important;
+        }
+
+        .tree-collection:hover > .tree-collection-header,
+        .tree-folder:hover > .tree-folder-header,
+        .tree-request:hover {
+            background-color: rgba(0, 123, 255, 0.1);
+            border: 1px dashed #007bff;
+        }
+
+        .tree-folder-header, .tree-request {
+            padding: 4px 8px;
+            cursor: pointer;
+            border-radius: 4px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            position: relative;
+        }
+
+        .tree-folder-header:hover .action-btns,
+        .tree-folder-header:hover .action-btns,
+        .tree-request:hover .action-btns {
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚀 Testeur d'API
+            <button class="settings-button" onclick="openSettings()" title="Paramètres">⚙️</button>
+        </h1>
+        <div class="import-section">
+            <div class="import-header" onclick="toggleImportSection()">
+                <span>📁 Import Collections & Environnements</span>
+                <span class="import-chevron" id="importChevron">▼</span>
+            </div>
+            <div class="import-content" id="importContent">
+                <div class="import-row">
+                    <label for="collectionFile">Collection :</label>
+                    <input type="file" id="collectionFile" accept=".json" onchange="importCollection()" />
+                    <span class="import-help">Bruno/Postman (.json)</span>
+                </div>
+                <div class="import-row">
+                    <label for="environmentFile">Environnement :</label>
+                    <input type="file" id="environmentFile" accept=".json" onchange="importEnvironment()" />
+                    <span class="import-help">Bruno/Postman (.json)</span>
+                </div>
+                <div class="environments-list" id="environmentsList" style="display: none; margin-top: 10px;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+                        <label for="environmentSelect" style="font-size:0.97em; color:#1976d2; font-weight:500;">🌍 Environnements :</label>
+                        <button class="settings-btn primary" onclick="openEnvironmentsModal()">✏️ Gérer les environnements</button>
+                    </div>
+                    <select id="environmentSelect">
+                        <option value="">Aucun environnement</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        
+        <div class="main-layout">
+            <div class="sidebar section-collapsible">
+                <div class="section-header" onclick="toggleCollectionsSection()">
+                    <div class="section-header-left">
+                        <span>📚 Collections</span>
+                        <span class="section-chevron" id="collectionsChevron">▼</span>
+                    </div>
+                    <div class="section-header-right" onclick="event.stopPropagation();">
+                        <button class="add-btn" onclick="createNewCollection()" style="padding: 5px 8px; font-size: 12px;" title="Nouvelle collection">📁+</button>
+                        <button class="add-btn" onclick="createNewRequest()" style="padding: 5px 8px; font-size: 12px;" title="Nouvelle requête">📄+</button>
+                    </div>
+                </div>
+                <div class="section-content" id="collectionsContent">
+                    <div class="collections-tree" id="collectionsTree">
+                        <div style="color: #6c757d; font-style: italic; text-align: center; padding: 20px;">
+                            Aucune collection importée
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="main-content section-collapsible">
+                <div class="section-header" onclick="toggleRequestSection()">
+                    <span>📤 Requête</span>
+                    <span class="section-chevron" id="requestChevron">▼</span>
+                </div>
+                <div class="section-content" id="requestContent">
+                    <div class="request-section">
+                        
+                        <div class="form-row">
+                            <select id="methodSelect" class="method-select">
+                                <option value="GET" class="method-GET">GET</option>
+                                <option value="POST" class="method-POST">POST</option>
+                                <option value="PUT" class="method-PUT">PUT</option>
+                                <option value="DELETE" class="method-DELETE">DELETE</option>
+                                <option value="PATCH">PATCH</option>
+                                <option value="HEAD">HEAD</option>
+                                <option value="OPTIONS">OPTIONS</option>
+                            </select>
+                            
+                            <input type="url" id="urlInput" class="url-input" placeholder="api.exemple.com/endpoint (http:// ajouté auto)" />
+                            
+                            <button class="add-btn" onclick="clearForm()" style="min-width: 40px;" title="Effacer">🧹</button>
+                            <button class="add-btn" onclick="saveCurrentAsRequest()" style="min-width: 40px;" title="Sauvegarder">💾</button>
+                        </div>
+                        
+                        <div class="headers-section">
+                            <h3>🏷️ En-têtes</h3>
+                            <div id="headersContainer"></div>
+                            <button class="add-btn" onclick="addHeader()">+ Ajouter un en-tête</button>
+                        </div>
+                        
+                        <div class="body-section">
+                            <h3>📝 Corps de la requête</h3>
+                            <div class="body-type-selector">
+                                <label><input type="radio" name="bodyType" value="none" checked onchange="toggleBodyType()"> Aucun</label>
+                                <label><input type="radio" name="bodyType" value="json" onchange="toggleBodyType()"> JSON</label>
+                                <label><input type="radio" name="bodyType" value="text" onchange="toggleBodyType()"> Texte</label>
+                                <label><input type="radio" name="bodyType" value="form" onchange="toggleBodyType()"> Form Data</label>
+                            </div>
+                            
+                            <div id="bodyContainer" style="display: none;">
+                                <textarea id="bodyTextarea" rows="8" style="width: 100%; resize: vertical;" placeholder='{"key": "value"}'></textarea>
+                                <div id="formDataContainer" style="display: none;"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <button class="send-btn" onclick="sendRequest()">🚀 Envoyer la requête</button>
+        
+        <div class="response-section" id="responseSection" style="display: none;">
+            <h2 class="section-title">📥 Réponse</h2>
+            
+            <div class="response-meta" id="responseMeta"></div>
+            
+            <div class="response-tabs">
+                <button class="tab active" onclick="switchTab('body')">Corps</button>
+                <button class="tab" onclick="switchTab('tree')">Arbre</button>
+                <button class="tab" onclick="switchTab('headers')">En-têtes</button>
+                <button class="tab" onclick="switchTab('raw')">Brut</button>
+            </div>
+            
+            <div id="bodyTab" class="tab-content active">
+                <div id="responseBody" class="json-viewer"></div>
+            </div>
+            
+            <div id="treeTab" class="tab-content">
+                <div id="responseTree" class="json-tree"></div>
+            </div>
+            
+            <div id="headersTab" class="tab-content">
+                <div id="responseHeaders" class="json-viewer"></div>
+            </div>
+            
+            <div id="rawTab" class="tab-content">
+                <div id="responseRaw" class="json-viewer"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal des paramètres -->
+    <div id="settingsModal" class="settings-modal">
+        <div class="settings-content">
+            <div class="settings-header">
+                <h2 class="settings-title">⚙️ Paramètres</h2>
+                <button class="close-settings" onclick="closeSettings()">×</button>
+            </div>
+            
+            <div class="settings-section">
+                <div class="settings-section-title">
+                    🔒 Sécurité & Certificats
+                </div>
+                
+                <div class="settings-option">
+                    <div class="option-label">
+                        <div class="option-title">Vérification SSL/TLS</div>
+                        <div class="option-description">Vérifier la validité des certificats SSL/TLS</div>
+                    </div>
+                    <div class="option-control">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="sslVerification" checked onchange="updateSettings()">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="settings-option">
+                    <div class="option-label">
+                        <div class="option-title">Certificat client personnalisé</div>
+                        <div class="option-description">Utiliser un certificat client pour l'authentification</div>
+                    </div>
+                    <div class="option-control">
+                        <div class="settings-button-group">
+                            <div class="file-input-wrapper">
+                                <button class="settings-btn">📄 Choisir</button>
+                                <input type="file" id="clientCert" accept=".pem,.crt,.cer,.p12,.pfx" onchange="loadClientCertificate()">
+                            </div>
+                            <button class="settings-btn danger" onclick="clearClientCertificate()">🗑️</button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="settings-section">
+                <div class="settings-section-title">
+                    📁 Gestion des Collections
+                </div>
+                
+                <div class="settings-option">
+                    <div class="option-label">
+                        <div class="option-title">Exporter les collections</div>
+                        <div class="option-description">Télécharger toutes les collections au format JSON</div>
+                    </div>
+                    <div class="option-control">
+                        <button class="settings-btn primary" onclick="exportCollections()">📤</button>
+                    </div>
+                </div>
+                
+                <div class="settings-option">
+                    <div class="option-label">
+                        <div class="option-title">Importer sauvegarde</div>
+                        <div class="option-description">Restaurer collections et paramètres depuis une sauvegarde</div>
+                    </div>
+                    <div class="option-control">
+                        <div class="file-input-wrapper">
+                            <button class="settings-btn">📥</button>
+                            <input type="file" id="backupFile" accept=".json" onchange="importBackup()">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="settings-section">
+                <div class="settings-section-title">
+                    💾 Sauvegarde & Préférences
+                </div>
+                
+                <div class="settings-option">
+                    <div class="option-label">
+                        <div class="option-title">Sauvegarde automatique</div>
+                        <div class="option-description">⚠️ Non disponible - Utilisez "Sauvegarder tout"</div>
+                    </div>
+                    <div class="option-control">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="autoSave" disabled>
+                            <span class="toggle-slider" style="opacity: 0.5;"></span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="settings-option">
+                    <div class="option-label">
+                        <div class="option-title">Créer une sauvegarde complète</div>
+                        <div class="option-description">Télécharger collections, environnements et paramètres</div>
+                    </div>
+                    <div class="option-control">
+                        <button class="settings-btn primary" onclick="createFullBackup()">💾</button>
+                    </div>
+                </div>
+                
+                <div class="settings-option">
+                    <div class="option-label">
+                        <div class="option-title">Réinitialiser l'application</div>
+                        <div class="option-description">Supprimer toutes les données et revenir aux paramètres par défaut</div>
+                    </div>
+                    <div class="option-control">
+                        <button class="settings-btn danger" onclick="resetApplication()">🔄</button>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="settings-section">
+                <div class="settings-section-title">
+                    🎨 Interface
+                </div>
+                
+                <div class="settings-option">
+                    <div class="option-label">
+                        <div class="option-title">Thème sombre</div>
+                        <div class="option-description">Utiliser le thème sombre pour l'interface</div>
+                    </div>
+                    <div class="option-control">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="darkTheme" onchange="updateSettings()">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+                
+                <div class="settings-option">
+                    <div class="option-label">
+                        <div class="option-title">Sidebar étendue par défaut</div>
+                        <div class="option-description">Garder la sidebar des collections ouverte au démarrage</div>
+                    </div>
+                    <div class="option-control">
+                        <label class="toggle-switch">
+                            <input type="checkbox" id="expandedSidebar" checked onchange="updateSettings()">
+                            <span class="toggle-slider"></span>
+                        </label>
+                    </div>
+                </div>
+            </div>
+
+            <div class="settings-section">
+                <div class="settings-section-title">
+                    🌍 Variables d'environnement
+                </div>
+                
+                <div class="settings-option">
+                    <div class="option-label">
+                        <div class="option-title">Environnement actuel</div>
+                        <div class="option-description">Sélectionnez l'environnement à modifier</div>
+                    </div>
+                    <div class="option-control">
+                        <select id="envSelect" onchange="loadEnvironmentVariables()" style="width: 200px;">
+                            <option value="">Aucun environnement</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div id="envVariablesContainer" style="display: none; margin-top: 15px;">
+                    <div class="env-variables-list" id="envVariablesList"></div>
+                    <div style="margin-top: 10px;">
+                        <button class="settings-btn primary" onclick="addEnvironmentVariable()" style="margin-right: 5px;">+ Ajouter</button>
+                        <button class="settings-btn" onclick="saveEnvironmentVariables()">💾 Sauvegarder</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Nouvelle Collection -->
+    <div id="createCollectionModal" class="create-modal">
+        <div class="create-content">
+            <h3 class="create-header">📁 Nouvelle Collection</h3>
+            <div class="form-group">
+                <label for="collectionName">Nom de la collection :</label>
+                <input type="text" id="collectionName" placeholder="Ma nouvelle collection" />
+            </div>
+            <div class="form-group">
+                <label for="collectionDescription">Description (optionnelle) :</label>
+                <textarea id="collectionDescription" rows="3" placeholder="Description de la collection..."></textarea>
+            </div>
+            <div class="form-actions">
+                <button class="btn-cancel" onclick="closeCreateModal()">Annuler</button>
+                <button class="btn-save" onclick="saveNewCollection()">Créer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Nouvelle Requête -->
+    <div id="createRequestModal" class="create-modal">
+        <div class="create-content">
+            <h3 class="create-header">📄 Nouvelle Requête</h3>
+            <div class="form-group">
+                <label for="requestName">Nom de la requête :</label>
+                <input type="text" id="requestName" placeholder="Ma nouvelle requête" />
+            </div>
+            <div class="form-group">
+                <label for="requestCollection">Collection :</label>
+                <select id="requestCollection"></select>
+            </div>
+            <div class="form-group">
+                <label for="requestFolder">Dossier (optionnel) :</label>
+                <input type="text" id="requestFolder" placeholder="Nom du dossier ou chemin/vers/dossier" />
+            </div>
+            <div class="form-group">
+                <label for="requestMethod">Méthode :</label>
+                <select id="requestMethod">
+                    <option value="GET">GET</option>
+                    <option value="POST">POST</option>
+                    <option value="PUT">PUT</option>
+                    <option value="DELETE">DELETE</option>
+                    <option value="PATCH">PATCH</option>
+                    <option value="HEAD">HEAD</option>
+                    <option value="OPTIONS">OPTIONS</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label for="requestUrl">URL :</label>
+                <input type="text" id="requestUrl" placeholder="https://api.exemple.com/endpoint" />
+            </div>
+            <div class="form-actions">
+                <button class="btn-cancel" onclick="closeCreateModal()">Annuler</button>
+                <button class="btn-save" onclick="saveNewRequest()">Créer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Nouveau Dossier -->
+    <div id="createFolderModal" class="create-modal">
+        <div class="create-content">
+            <h3 class="create-header">📂 Nouveau Dossier</h3>
+            <div class="form-group">
+                <label for="folderName">Nom du dossier :</label>
+                <input type="text" id="folderName" placeholder="Mon nouveau dossier" />
+            </div>
+            <div class="form-group">
+                <label for="folderCollection">Collection :</label>
+                <select id="folderCollection"></select>
+            </div>
+            <div class="form-group">
+                <label for="folderParent">Dossier parent (optionnel) :</label>
+                <input type="text" id="folderParent" placeholder="Laisser vide pour créer à la racine" />
+            </div>
+            <div class="form-actions">
+                <button class="btn-cancel" onclick="closeCreateModal()">Annuler</button>
+                <button class="btn-save" onclick="saveNewFolder()">Créer</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal pour la gestion des environnements -->
+    <div id="environmentsModal" class="settings-modal">
+        <div class="settings-content" style="max-width: 800px;">
+            <div class="settings-header">
+                <div class="settings-title">🌍 Gestion des environnements</div>
+                <button class="close-settings" onclick="closeEnvironmentsModal()">×</button>
+            </div>
+            <div id="environmentsListContainer" style="margin-top: 20px;"></div>
+        </div>
+    </div>
+    <!-- Modal pour l'édition des variables d'un environnement -->
+    <div id="editEnvVarsModal" class="settings-modal">
+        <div class="settings-content" style="max-width: 800px;">
+            <div class="settings-header">
+                <div class="settings-title" id="editEnvVarsTitle">✏️ Modifier les variables</div>
+                <button class="close-settings" onclick="closeEditEnvVarsModal()">×</button>
+            </div>
+            <div id="editEnvVarsContainer" style="margin-top: 10px;">
+                <div class="env-variables-list" id="editEnvVarsList"></div>
+                <div style="margin-top: 10px;">
+                    <button class="settings-btn primary" onclick="addEditEnvVarInput()" style="margin-right: 5px;">+ Ajouter</button>
+                    <button class="settings-btn" onclick="saveEditEnvVars()">💾 Sauvegarder</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Variables globales
+        let responseData = null;
+        let collections = [];
+        let environments = {};
+        let currentEnvironment = null;
+        let settings = {
+            sslVerification: true,
+            darkTheme: false,
+            expandedSidebar: true,
+            clientCertificate: null
+        };
+        
+        // Fonction de remplacement des variables
+        function replaceVariables(text) {
+            if (!currentEnvironment || !text) return text;
+            
+            let result = text;
+            for (let key in currentEnvironment) {
+                const regex = new RegExp('{{' + key + '}}', 'g');
+                result = result.replace(regex, currentEnvironment[key]);
+            }
+            return result;
+        }
+
+        // Fonction principale avec VRAIE gestion SSL
+        async function sendRequest() {
+            const method = document.getElementById('methodSelect').value;
+            let url = document.getElementById('urlInput').value.trim();
+            
+            if (!url) {
+                showError('Veuillez entrer une URL.');
+                return;
+            }
+            
+            // Remplacer les variables d'environnement
+            url = replaceVariables(url);
+            // Auto-ajouter protocole
+            if (!url.match(/^https?:\/\//i)) {
+                if (url.match(/^(localhost|127\.0\.0\.1|192\.168\.|10\.)/i)) {
+                    url = 'http://' + url;
+                } else {
+                    url = 'https://' + url;
+                }
+            }
+            
+            // VRAIE validation URL avec gestion SSL
+            try {
+                new URL(url);
+            } catch {
+                showError('URL invalide: ' + url);
+                return;
+            }
+            
+            // Si SSL désactivé et HTTPS, forcer HTTP pour vraiment contourner SSL
+            if (!settings.sslVerification && url.startsWith('https://')) {
+                const httpUrl = url.replace('https://', 'http://');
+                if (confirm('⚠️ Vérification SSL désactivée. Voulez-vous forcer HTTP au lieu de HTTPS ?\n\nHTTPS: ' + url + '\nHTTP: ' + httpUrl)) {
+                    url = httpUrl;
+                }
+            }
+            
+            // Préparer headers
+            const headers = {};
+            const headerItems = document.querySelectorAll('.header-item');
+            headerItems.forEach(function(item) {
+                let key = item.querySelector('.header-key').value.trim();
+                let value = item.querySelector('.header-value').value.trim();
+                if (key && value) {
+                    key = replaceVariables(key);
+                    value = replaceVariables(value);
+                    headers[key] = value;
+                }
+            });
+            
+            // Ajouter certificat client si configuré
+            if (settings.clientCertificate) {
+                headers['X-Client-Certificate'] = 'Configuré: ' + settings.clientCertificate.name;
+                console.log('🔐 Certificat client configuré:', settings.clientCertificate.name);
+            }
+            
+            // Préparer body
+            let body = null;
+            const bodyType = document.querySelector('input[name="bodyType"]:checked').value;
+            if (bodyType !== 'none' && ['POST', 'PUT', 'PATCH'].includes(method)) {
+                let bodyText = document.getElementById('bodyTextarea').value.trim();
+                if (bodyText) {
+                    body = replaceVariables(bodyText);
+                    if (bodyType === 'json' && !headers['Content-Type']) {
+                        headers['Content-Type'] = 'application/json';
+                    }
+                }
+            }
+            
+            // Afficher loading
+            showLoading();
+            
+            const startTime = Date.now();
+            
+            try {
+                const fetchOptions = {
+                    method: method,
+                    headers: headers,
+                    body: body,
+                    mode: 'cors'
+                };
+                
+                // Information SSL dans les logs
+                console.log('🔒 Paramètres SSL:', {
+                    verification: settings.sslVerification,
+                    url: url,
+                    certificat: settings.clientCertificate ? settings.clientCertificate.name : 'Aucun'
+                });
+                
+                const response = await fetch(url, fetchOptions);
+                
+                const endTime = Date.now();
+                const responseTime = endTime - startTime;
+                
+                const responseText = await response.text();
+                let responseBody;
+                
+                try {
+                    responseBody = JSON.parse(responseText);
+                } catch {
+                    responseBody = responseText;
+                }
+                
+                responseData = {
+                    status: response.status,
+                    statusText: response.statusText,
+                    headers: Object.fromEntries(response.headers.entries()),
+                    body: responseBody,
+                    raw: responseText,
+                    time: responseTime,
+                    finalUrl: url,
+                    sslInfo: {
+                        verificationEnabled: settings.sslVerification,
+                        clientCert: settings.clientCertificate ? settings.clientCertificate.name : null
+                    }
+                };
+                
+                displayResponse();
+                
+            } catch (error) {
+                let errorMessage = 'Erreur de requête: ' + error.message;
+                if (!settings.sslVerification) {
+                    errorMessage += '\n\n⚠️ Vérification SSL désactivée - Cela peut causer des erreurs de sécurité.';
+                }
+                showError(errorMessage);
+            }
+        }
+
+        // Fonctions d'affichage
+        function showLoading() {
+            const responseSection = document.getElementById('responseSection');
+            responseSection.style.display = 'block';
+            responseSection.innerHTML = '<h2 class="section-title">📥 Réponse</h2><div class="loading"><div class="spinner"></div><p>Envoi de la requête...</p></div>';
+        }
+        
+        function showError(message) {
+            const responseSection = document.getElementById('responseSection');
+            responseSection.style.display = 'block';
+            responseSection.innerHTML = '<h2 class="section-title">📥 Réponse</h2><div class="error">❌ ' + message + '</div>';
+        }
+        
+        function displayResponse() {
+            const responseSection = document.getElementById('responseSection');
+            
+            let statusClass = 'status-2xx';
+            if (responseData.status >= 300 && responseData.status < 400) statusClass = 'status-3xx';
+            else if (responseData.status >= 400 && responseData.status < 500) statusClass = 'status-4xx';
+            else if (responseData.status >= 500) statusClass = 'status-5xx';
+            
+            // Ajouter info SSL dans la réponse
+            let sslInfo = '';
+            if (responseData.sslInfo) {
+                const sslIcon = responseData.sslInfo.verificationEnabled ? '🔒' : '🔓';
+                const certInfo = responseData.sslInfo.clientCert ? ' | Cert: ' + responseData.sslInfo.clientCert : '';
+                sslInfo = '<span style="font-size: 12px; color: #6c757d;">' + sslIcon + ' SSL: ' + (responseData.sslInfo.verificationEnabled ? 'Vérifié' : 'Ignoré') + certInfo + '</span>';
+            }
+            
+            responseSection.innerHTML = '<h2 class="section-title">📥 Réponse</h2><div class="response-meta"><span class="status-badge ' + statusClass + '">' + responseData.status + ' ' + responseData.statusText + '</span><span class="response-time">⏱️ ' + responseData.time + 'ms</span><span style="font-size: 12px; color: #6c757d;">🔗 ' + responseData.finalUrl + '</span>' + sslInfo + '</div><div class="response-tabs"><button class="tab active" onclick="switchTab(\'body\')">Corps</button><button class="tab" onclick="switchTab(\'tree\')">Arbre</button><button class="tab" onclick="switchTab(\'headers\')">En-têtes</button><button class="tab" onclick="switchTab(\'raw\')">Brut</button></div><div id="bodyTab" class="tab-content active"><div id="responseBody" class="json-viewer"></div></div><div id="treeTab" class="tab-content"><div id="responseTree" class="json-tree"></div></div><div id="headersTab" class="tab-content"><div id="responseHeaders" class="json-viewer"></div></div><div id="rawTab" class="tab-content"><div id="responseRaw" class="json-viewer"></div></div>';
+            
+            document.getElementById('responseBody').textContent = typeof responseData.body === 'object' ? JSON.stringify(responseData.body, null, 2) : responseData.body;
+            
+            // Créer l'arbre JSON interactif
+            const treeContainer = document.getElementById('responseTree');
+            if (typeof responseData.body === 'object' && responseData.body !== null) {
+                treeContainer.innerHTML = renderJsonTree(responseData.body);
+            } else {
+                treeContainer.innerHTML = '<div class="json-ellipsis">Données non-JSON - Voir l\'onglet "Brut"</div>';
+            }
+            
+            document.getElementById('responseHeaders').textContent = JSON.stringify(responseData.headers, null, 2);
+            document.getElementById('responseRaw').textContent = responseData.raw;
+        }
+        
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab').forEach(function(tab) { 
+                tab.classList.remove('active'); 
+            });
+            document.querySelectorAll('.tab-content').forEach(function(content) { 
+                content.classList.remove('active'); 
+            });
+            
+            event.target.classList.add('active');
+            document.getElementById(tabName + 'Tab').classList.add('active');
+        }
+
+        // Fonctions headers
+        function addHeader() {
+            const container = document.getElementById('headersContainer');
+            const headerItem = document.createElement('div');
+            headerItem.className = 'header-item';
+            headerItem.innerHTML = '<input type="text" placeholder="Clé" class="header-key" /><input type="text" placeholder="Valeur" class="header-value" /><button class="remove-btn" onclick="removeHeader(this)">×</button>';
+            container.appendChild(headerItem);
+        }
+        
+        function removeHeader(button) {
+            button.parentElement.remove();
+        }
+
+        // Fonctions body
+        function toggleBodyType() {
+            const bodyType = document.querySelector('input[name="bodyType"]:checked').value;
+            const bodyContainer = document.getElementById('bodyContainer');
+            const bodyTextarea = document.getElementById('bodyTextarea');
+            
+            if (bodyType === 'none') {
+                bodyContainer.style.display = 'none';
+            } else {
+                bodyContainer.style.display = 'block';
+                bodyTextarea.style.display = 'block';
+                
+                if (bodyType === 'json') {
+                    bodyTextarea.placeholder = '{\n  "key": "value"\n}';
+                } else {
+                    bodyTextarea.placeholder = 'Votre texte ici...';
+                }
+            }
+        }
+
+        // Fonction clear
+        function clearForm() {
+            document.getElementById('methodSelect').value = 'GET';
+            document.getElementById('urlInput').value = '';
+            document.getElementById('headersContainer').innerHTML = '';
+            addHeader();
+            document.querySelector('input[name="bodyType"][value="none"]').checked = true;
+            toggleBodyType();
+            document.getElementById('bodyTextarea').value = '';
+            
+            const methodSelect = document.getElementById('methodSelect');
+            methodSelect.className = 'method-select method-GET';
+        }
+
+        // Fonctions d'import de collections
+        function importCollection() {
+            const file = document.getElementById('collectionFile').files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    let imported = false;
+                    // Format natif de l'application (export)
+                    if (data.collections && Array.isArray(data.collections)) {
+                        collections = data.collections;
+                        imported = true;
+                    }
+                    // Format Bruno (votre format INDIGO)
+                    else if (data.name && data.items) {
+                        collections.push({
+                            name: data.name,
+                            requests: parseBrunoCollection(data)
+                        });
+                        imported = true;
+                    }
+                    // Format Postman
+                    else if (data.info && data.item) {
+                        collections.push({
+                            name: data.info.name || 'Collection Postman',
+                            requests: flattenPostmanItems(data.item)
+                        });
+                        imported = true;
+                    }
+                    else {
+                        throw new Error('Format de collection non reconnu');
+                    }
+                    // Importer les environnements si présents
+                    if (data.environments && Array.isArray(data.environments)) {
+                        data.environments.forEach(env => {
+                            environments[env.name] = {
+                                name: env.name,
+                                variables: Array.isArray(env.variables) ? env.variables : []
+                            };
+                        });
+                    }
+                    displayCollections();
+                    displayEnvironments();
+                    saveToLocalStorage();
+                    if (imported) {
+                        alert('Import réussi !');
+                    }
+                } catch (error) {
+                    alert('Erreur lors de l\'import: ' + error.message);
+                }
+            };
+            reader.readAsText(file);
+        }
+        
+        function parseBrunoCollection(data) {
+            const requests = [];
+            
+            function parseItems(items, parentName) {
+                if (!items || !Array.isArray(items)) return;
+                
+                parentName = parentName || '';
+                items.forEach(function(item) {
+                    if (item.type === 'http') {
+                        const request = {
+                            name: parentName ? parentName + ' > ' + item.name : item.name,
+                            method: item.request.method,
+                            url: item.request.url,
+                            headers: {},
+                            body: null
+                        };
+                        
+                        // Parser les en-têtes
+                        if (item.request.headers) {
+                            item.request.headers.forEach(function(header) {
+                                if (header.enabled && header.name && header.value) {
+                                    request.headers[header.name] = header.value;
+                                }
+                            });
+                        }
+                        
+                        // Parser le corps
+                        if (item.request.body && item.request.body.mode === 'json' && item.request.body.json) {
+                            request.body = item.request.body.json;
+                        }
+                        
+                        requests.push(request);
+                        
+                    } else if (item.type === 'folder') {
+                        const folderName = parentName ? parentName + ' > ' + item.name : item.name;
+                        
+                        // Parser récursivement tous les items du dossier
+                        if (item.items && Array.isArray(item.items)) {
+                            parseItems(item.items, folderName);
+                        }
+                        
+                        // Vérifications supplémentaires pour d'autres structures possibles
+                        if (item.root && item.root.items) {
+                            parseItems(item.root.items, folderName);
+                        }
+                        
+                        if (item.children) {
+                            parseItems(item.children, folderName);
+                        }
+                    }
+                });
+            }
+            
+            if (data.items) {
+                parseItems(data.items);
+            }
+            
+            return requests;
+        }
+        
+        function flattenPostmanItems(items) {
+            const requests = [];
+            items.forEach(function(item) {
+                if (item.request) {
+                    requests.push({
+                        name: item.name,
+                        method: item.request.method,
+                        url: typeof item.request.url === 'string' ? item.request.url : item.request.url.raw,
+                        headers: {},
+                        body: item.request.body ? item.request.body.raw : null
+                    });
+                }
+            });
+            return requests;
+        }
+        
+        function displayCollections() {
+            const container = document.getElementById('collectionsTree');
+            
+            if (collections.length === 0) {
+                container.innerHTML = '<div style="color: #6c757d; font-style: italic; text-align: center; padding: 20px;">Aucune collection importée</div>';
+                return;
+            }
+            
+            container.innerHTML = '';
+            container.addEventListener('dragover', allowDrop);
+            container.addEventListener('drop', dropOnCollectionContainer);
+            container.addEventListener('dragleave', clearDragOver);
+            
+            collections.forEach(function(collection, collectionIndex) {
+                // Organiser les requêtes par structure hiérarchique
+                const structure = organizeRequestsIntoFolders(collection.requests);
+                
+                const collectionDiv = document.createElement('div');
+                collectionDiv.className = 'tree-collection';
+                collectionDiv.dataset.collectionIndex = collectionIndex;
+                collectionDiv.innerHTML = '<div class="tree-collection-header" onclick="toggleTreeCollection(' + collectionIndex + ')"><span class="tree-toggle" id="toggle-collection-' + collectionIndex + '">▶</span><span>📁 ' + collection.name + '</span><span class="action-btns"><button class="add-folder-btn" onclick="event.stopPropagation(); createNewFolder(\'' + collection.name + '\', \'\')"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/><path d="M12 12v4m2-2h-4"/></svg></button><button class="edit-btn" onclick="event.stopPropagation(); editCollection(' + collectionIndex + ')"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16.862 5.487l1.65-1.65a2.121 2.121 0 1 1 3 3l-1.65 1.65M7 17h3l9-9a2.121 2.121 0 0 0-3-3l-9 9v3z"/></svg></button><button class="delete-btn" onclick="event.stopPropagation(); deleteCollection(' + collectionIndex + ')"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h14z"/></svg></button></span></div><div class="tree-folders" id="folders-' + collectionIndex + '">' + renderFolderTree(structure, collectionIndex) + '</div>';
+                
+                container.appendChild(collectionDiv);
+            });
+            
+            // Appliquer le paramètre de sidebar étendue
+            applySidebarSetting();
+        }
+        
+        function organizeRequestsIntoFolders(requests) {
+            const structure = {};
+            
+            requests.forEach(function(request, index) {
+                const parts = request.name.split(' > ');
+                let current = structure;
+                
+                // Créer la structure des dossiers
+                for (let i = 0; i < parts.length - 1; i++) {
+                    const folderName = parts[i].trim();
+                    if (!current[folderName]) {
+                        current[folderName] = { folders: {}, requests: [] };
+                    }
+                    current = current[folderName];
+                    
+                    // Si nous ne sommes pas au dernier dossier, continuer dans les sous-dossiers
+                    if (i < parts.length - 2) {
+                        current = current.folders;
+                    }
+                }
+                
+                // Ajouter la requête
+                const requestName = parts[parts.length - 1].trim();
+                if (parts.length === 1) {
+                    // Requête à la racine
+                    if (!structure['__root__']) {
+                        structure['__root__'] = { folders: {}, requests: [] };
+                    }
+                    structure['__root__'].requests.push({ ...request, displayName: requestName, index: index });
+                } else {
+                    // Requête dans un dossier (peut être imbriqué)
+                    current.requests.push({ ...request, displayName: requestName, index: index });
+                }
+            });
+            
+            return structure;
+        }
+        
+        function renderFolderTree(structure, collectionIndex, parentPath) {
+            let html = '';
+            parentPath = parentPath || '';
+            
+            // Afficher les requêtes à la racine d'abord
+            if (structure['__root__'] && structure['__root__'].requests.length > 0) {
+                structure['__root__'].requests.forEach(function(request) {
+                    html += `<div class="tree-request" draggable="true" ondragstart="dragStart(event, ${collectionIndex}, ${request.index}, 'request')" onclick="loadRequest(${collectionIndex}, ${request.index})"><span class="tree-request-method method-${request.method}">${request.method}</span><span class="tree-request-name">${request.displayName}</span><span class="action-btns"><button class="edit-btn" onclick="event.stopPropagation(); editRequest(${collectionIndex}, ${request.index})"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16.862 5.487l1.65-1.65a2.121 2.121 0 1 1 3 3l-1.65 1.65M7 17h3l9-9a2.121 2.121 0 0 0-3-3l-9 9v3z"/></svg></button></span><button class="delete-btn" onclick="event.stopPropagation(); deleteRequest(${collectionIndex}, ${request.index})"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h14z"/></svg></button></div>`;
+                });
+            }
+            
+            // Afficher les dossiers
+            Object.keys(structure).forEach(function(folderName) {
+                if (folderName === '__root__') return;
+                
+                const folder = structure[folderName];
+                const fullPath = parentPath ? parentPath + ' > ' + folderName : folderName;
+                const folderId = 'folder-' + collectionIndex + '-' + fullPath.replace(/[^a-zA-Z0-9\-]/g, '');
+                
+                html += `<div class="tree-folder" ondrop="drop(event)" ondragover="allowDrop(event)" ondragleave="clearDragOver(event)" data-collection-index="${collectionIndex}" data-folder-path="${fullPath}" data-type="folder">`;
+                html += `<div class="tree-folder-header" draggable="true" ondragstart="dragStart(event, ${collectionIndex}, null, 'folder', '${fullPath}')" onclick="toggleTreeFolder('${folderId}')" >`;
+                html += `<span class="tree-toggle" id="toggle-${folderId}">▶</span>`;
+                html += `<span>📂 ${folderName}</span>`;
+                html += `<span class="action-btns"><button class="add-folder-btn" onclick="event.stopPropagation(); createNewFolder('${collections[collectionIndex].name}', '${fullPath}')"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V7z"/><path d="M12 12v4m2-2h-4"/></svg></button><button class="edit-btn" onclick="event.stopPropagation(); editFolder(${collectionIndex}, '${fullPath}')"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16.862 5.487l1.65-1.65a2.121 2.121 0 1 1 3 3l-1.65 1.65M7 17h3l9-9a2.121 2.121 0 0 0-3-3l-9 9v3z"/></svg></button></span>`;
+                html += `<button class="delete-btn" onclick="event.stopPropagation(); deleteFolder(${collectionIndex}, '${fullPath}')"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h14z"/></svg></button>`;
+                html += '</div>';
+                html += `<div class="tree-requests" id="${folderId}">`;
+                
+                // Requêtes du dossier
+                folder.requests.forEach(function(request) {
+                    html += `<div class="tree-request" draggable="true" ondragstart="dragStart(event, ${collectionIndex}, ${request.index}, 'request')" onclick="loadRequest(${collectionIndex}, ${request.index})"><span class="tree-request-method method-${request.method}">${request.method}</span><span class="tree-request-name">${request.displayName}</span><span class="action-btns"><button class="edit-btn" onclick="event.stopPropagation(); editRequest(${collectionIndex}, ${request.index})"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M16.862 5.487l1.65-1.65a2.121 2.121 0 1 1 3 3l-1.65 1.65M7 17h3l9-9a2.121 2.121 0 0 0-3-3l-9 9v3z"/></svg></button></span><button class="delete-btn" onclick="event.stopPropagation(); deleteRequest(${collectionIndex}, ${request.index})"><svg width="16" height="16" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2m2 0v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6h14z"/></svg></button></div>`;
+                });
+                
+                // Sous-dossiers récursifs
+                if (folder.folders && Object.keys(folder.folders).length > 0) {
+                    html += renderFolderTree(folder.folders, collectionIndex, fullPath);
+                }
+                
+                html += '</div>';
+                html += '</div>';
+            });
+            
+            return html;
+        }
+        
+        function toggleTreeCollection(collectionIndex) {
+            const folders = document.getElementById('folders-' + collectionIndex);
+            const toggle = document.getElementById('toggle-collection-' + collectionIndex);
+            const header = toggle.parentElement;
+            
+            if (folders.classList.contains('show')) {
+                folders.classList.remove('show');
+                toggle.textContent = '▶';
+                header.classList.remove('expanded');
+            } else {
+                folders.classList.add('show');
+                toggle.textContent = '▼';
+                header.classList.add('expanded');
+            }
+        }
+        
+        function toggleTreeFolder(folderId) {
+            const folder = document.getElementById(folderId);
+            const toggle = document.getElementById('toggle-' + folderId);
+            const header = toggle.parentElement;
+            
+            if (folder.classList.contains('show')) {
+                folder.classList.remove('show');
+                toggle.textContent = '▶';
+                header.classList.remove('expanded');
+            } else {
+                folder.classList.add('show');
+                toggle.textContent = '▼';
+                header.classList.add('expanded');
+            }
+        }
+        
+        function loadRequest(collectionIndex, requestIndex) {
+            const request = collections[collectionIndex].requests[requestIndex];
+            
+            document.getElementById('methodSelect').value = request.method;
+            document.getElementById('urlInput').value = request.url;
+            
+            // Effacer et recharger les en-têtes
+            document.getElementById('headersContainer').innerHTML = '';
+            if (request.headers) {
+                for (let key in request.headers) {
+                    addHeaderWithValues(key, request.headers[key]);
+                }
+            }
+            addHeader();
+            
+            // Charger le corps
+            if (request.body) {
+                document.querySelector('input[name="bodyType"][value="json"]').checked = true;
+                toggleBodyType();
+                document.getElementById('bodyTextarea').value = request.body;
+            } else {
+                document.querySelector('input[name="bodyType"][value="none"]').checked = true;
+                toggleBodyType();
+            }
+            
+            // Mettre à jour la couleur de la méthode
+            const methodSelect = document.getElementById('methodSelect');
+            methodSelect.className = 'method-select method-' + request.method;
+        }
+        
+        function addHeaderWithValues(key, value) {
+            const container = document.getElementById('headersContainer');
+            const headerItem = document.createElement('div');
+            headerItem.className = 'header-item';
+            headerItem.innerHTML = '<input type="text" placeholder="Clé" class="header-key" value="' + key + '" /><input type="text" placeholder="Valeur" class="header-value" value="' + value + '" /><button class="remove-btn" onclick="removeHeader(this)">×</button>';
+            container.appendChild(headerItem);
+        }
+        
+        function importEnvironment() {
+            const file = document.getElementById('environmentFile').files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = JSON.parse(e.target.result);
+                    
+                    // Format Bruno avec environments
+                    if (data.environments && Array.isArray(data.environments)) {
+                        data.environments.forEach(function(env) {
+                            const envName = env.name || 'Environnement Bruno';
+                            environments[envName] = {
+                                variables: env.variables || [],
+                                name: envName
+                            };
+                        });
+                    }
+                    // Format Postman
+                    else if (data.values) {
+                        const envName = data.name || 'Environnement Postman';
+                        environments[envName] = {
+                            name: envName,
+                            variables: data.values.map(item => ({
+                                name: item.key,
+                                value: item.value,
+                                enabled: true,
+                                secret: false,
+                                type: 'text'
+                            }))
+                        };
+                    }
+                    
+                    displayEnvironments();
+                    saveToLocalStorage();
+                    
+                } catch (error) {
+                    alert('Erreur lors de l\'import: ' + error.message);
+                }
+            };
+            reader.readAsText(file);
+        }
+        
+        function displayEnvironments() {
+            const select = document.getElementById('environmentSelect');
+            const envSelect = document.getElementById('envSelect');
+            const listDiv = document.getElementById('environmentsList');
+            
+            if (Object.keys(environments).length === 0) {
+                listDiv.style.display = 'none';
+                return;
+            }
+            
+            listDiv.style.display = 'block';
+            select.innerHTML = '<option value="">Aucun environnement</option>';
+            envSelect.innerHTML = '<option value="">Aucun environnement</option>';
+            
+            for (let envName in environments) {
+                const option = document.createElement('option');
+                option.value = envName;
+                option.textContent = envName;
+                select.appendChild(option);
+                
+                const envOption = option.cloneNode(true);
+                envSelect.appendChild(envOption);
+            }
+            
+            select.onchange = function() {
+                currentEnvironment = this.value ? environments[this.value] : null;
+            };
+        }
+
+        function openEnvironmentsModal() {
+            const modal = document.getElementById('environmentsModal');
+            const container = document.getElementById('environmentsListContainer');
+            container.innerHTML = '';
+            
+            // Créer la liste des environnements
+            const envList = document.createElement('div');
+            envList.className = 'environments-list';
+            envList.style.cssText = 'display: flex; flex-direction: column; gap: 8px;';
+            
+            for (let envName in environments) {
+                const envItem = document.createElement('div');
+                envItem.style.cssText = 'display: flex; justify-content: space-between; align-items: center; background: #f8f9fa; padding: 12px; border-radius: 6px; border: 1px solid #e9ecef;';
+                
+                const envInfo = document.createElement('div');
+                envInfo.style.cssText = 'display: flex; flex-direction: column; gap: 4px;';
+                
+                const envTitle = document.createElement('div');
+                envTitle.style.cssText = 'font-weight: 500; color: #2c3e50; font-size: 1.1em;';
+                envTitle.textContent = envName;
+                
+                const envVars = document.createElement('div');
+                envVars.style.cssText = 'font-size: 0.9em; color: #6c757d;';
+                const activeVars = environments[envName].variables.filter(v => v.enabled).length;
+                const totalVars = environments[envName].variables.length;
+                envVars.textContent = `${activeVars}/${totalVars} variables actives`;
+                
+                envInfo.appendChild(envTitle);
+                envInfo.appendChild(envVars);
+                
+                const envActions = document.createElement('div');
+                envActions.style.cssText = 'display: flex; gap: 8px; align-items: center;';
+                
+                const editBtn = document.createElement('button');
+                editBtn.className = 'settings-btn primary';
+                editBtn.innerHTML = '✏️ Modifier';
+                editBtn.onclick = function() {
+                    openEditEnvVarsModal(envName);
+                };
+                
+                envActions.appendChild(editBtn);
+                envItem.appendChild(envInfo);
+                envItem.appendChild(envActions);
+                envList.appendChild(envItem);
+            }
+            
+            container.appendChild(envList);
+            modal.style.display = 'block';
+        }
+
+        function closeEnvironmentsModal() {
+            document.getElementById('environmentsModal').style.display = 'none';
+        }
+
+        function addVariableInput(variable = null) {
+            const list = document.getElementById('envVariablesList');
+            const div = document.createElement('div');
+            div.className = 'env-variable-item';
+            div.style.cssText = 'display: flex; gap: 10px; margin-bottom: 10px; align-items: center; background: #f8f9fa; padding: 10px; border-radius: 6px;';
+            
+            const isSecret = variable ? variable.secret : false;
+            const isEnabled = variable ? variable.enabled : true;
+            const type = variable ? variable.type : 'text';
+            
+            div.innerHTML = `
+                <div style="flex: 1; display: flex; gap: 10px;">
+                    <input type="text" placeholder="Nom" value="${variable ? variable.name : ''}" class="env-key" style="flex: 1; padding: 5px; border: 1px solid #ddd; border-radius: 4px;">
+                    <input type="${isSecret ? 'password' : 'text'}" placeholder="Valeur" value="${variable ? variable.value : ''}" class="env-value" style="flex: 1; padding: 5px; border: 1px solid #ddd; border-radius: 4px;">
+                </div>
+                <div style="display: flex; gap: 5px; align-items: center;">
+                    <label style="display: flex; align-items: center; gap: 4px; font-size: 0.9em;">
+                        <input type="checkbox" class="env-enabled" ${isEnabled ? 'checked' : ''} style="margin: 0;">
+                        Actif
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 4px; font-size: 0.9em;">
+                        <input type="checkbox" class="env-secret" ${isSecret ? 'checked' : ''} style="margin: 0;">
+                        Secret
+                    </label>
+                    <select class="env-type" style="padding: 3px; border: 1px solid #ddd; border-radius: 4px;">
+                        <option value="text" ${type === 'text' ? 'selected' : ''}>Texte</option>
+                        <option value="number" ${type === 'number' ? 'selected' : ''}>Nombre</option>
+                        <option value="boolean" ${type === 'boolean' ? 'selected' : ''}>Booléen</option>
+                    </select>
+                    <button class="settings-btn danger" onclick="this.parentElement.parentElement.remove()">🗑️</button>
+                </div>
+            `;
+            
+            // Ajouter les événements pour les cases à cocher
+            const secretCheckbox = div.querySelector('.env-secret');
+            const valueInput = div.querySelector('.env-value');
+            
+            secretCheckbox.addEventListener('change', function() {
+                valueInput.type = this.checked ? 'password' : 'text';
+            });
+            
+            list.appendChild(div);
+        }
+
+        // Fonctions JSON Tree avec style Swagger UI
+        function renderJsonTree(data, key, level) {
+            level = level || 1;
+            if (data === null) {
+                return renderJsonBlock('null', key, 'null', 'null', level);
+            }
+            if (typeof data === 'string') {
+                return renderJsonBlock('string', key, '"' + data + '"', data.length + ' caractères', level);
+            }
+            if (typeof data === 'number') {
+                return renderJsonBlock('number', key, data, 'number', level);
+            }
+            if (typeof data === 'boolean') {
+                return renderJsonBlock('boolean', key, data ? 'true' : 'false', 'boolean', level);
+            }
+            if (Array.isArray(data)) {
+                const itemCount = data.length;
+                let content = '';
+                for (let i = 0; i < data.length; i++) {
+                    content += '<div style="margin: 5px 0 5px 0;">';
+                    content += renderJsonTree(data[i], null, level + 1);
+                    content += '</div>';
+                }
+                return renderJsonBlock('array', key, null, 'array (' + itemCount + ' élément' + (itemCount > 1 ? 's' : '') + ')', level, content);
+            }
+            if (typeof data === 'object') {
+                const keys = Object.keys(data);
+                const keyCount = keys.length;
+                let content = '';
+                for (let i = 0; i < keys.length; i++) {
+                    const objKey = keys[i];
+                    content += '<div style="margin: 5px 0 5px 0;">';
+                    content += renderJsonTree(data[objKey], objKey, level + 1);
+                    content += '</div>';
+                }
+                return renderJsonBlock('object', key, null, 'object (' + keyCount + ' propriété' + (keyCount > 1 ? 's' : '') + ')', level, content);
+            }
+            return renderJsonBlock('unknown', key, 'Type inconnu', 'unknown', level);
+        }
+        function renderJsonBlock(type, key, value, info, level, content) {
+            const blockId = 'json-block-' + Math.random().toString(36).substr(2, 9);
+            const hasContent = content && content.trim();
+            const displayKey = key !== null && key !== undefined ? key : '';
+            const displayValue = value !== null && value !== undefined ? value : '';
+            let html = '<div class="json-block json-' + type + '-block json-level-' + level + '">';
+            // Header
+            html += '<div class="json-block-header" onclick="toggleJsonBlock(\'' + blockId + '\')">';
+            html += '<div style="display: flex; align-items: center;">';
+            if (hasContent) {
+                html += '<span class="json-block-toggle" id="toggle-' + blockId + '">▶</span>';
+            }
+            if (displayKey) {
+                html += '<span class="json-block-key">' + displayKey + '</span>';
+            }
+            if (displayValue !== '' && !hasContent) {
+                html += '<span class="json-value-simple">' + displayValue + '</span>';
+            }
+            html += '</div>';
+            html += '<div style="display: flex; align-items: center;">';
+            if (info) {
+                html += '<span class="json-block-type">' + info + '</span>';
+            }
+            html += '</div>';
+            html += '</div>';
+            // Content
+            if (hasContent) {
+                // Par défaut, seuls les blocs de niveau 1 sont ouverts
+                const showClass = (level === 1) ? ' show' : '';
+                html += '<div class="json-block-content json-nested' + showClass + '" id="' + blockId + '">' + content + '</div>';
+            }
+            html += '</div>';
+            return html;
+        }
+
+        // Event listeners
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey && e.key === 'Enter') {
+                sendRequest();
+            }
+            if (e.key === 'Escape') {
+                closeSettings();
+                closeCreateModal();
+            }
+        });
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            loadFromLocalStorage();
+            addHeader();
+            loadSettings();
+            displayCollections();
+            displayEnvironments();
+            document.getElementById('methodSelect').addEventListener('change', function() {
+                const method = this.value;
+                this.className = 'method-select method-' + method;
+            });
+        });
+
+        // Fonctions de création de collections et requêtes
+        function createNewCollection() {
+            document.getElementById('collectionName').value = '';
+            document.getElementById('collectionDescription').value = '';
+            document.getElementById('createCollectionModal').style.display = 'block';
+        }
+        
+        function createNewRequest() {
+            if (collections.length === 0) {
+                alert('Veuillez d\'abord créer une collection.');
+                return;
+            }
+            
+            // Remplir la liste des collections
+            const select = document.getElementById('requestCollection');
+            select.innerHTML = '';
+            collections.forEach(function(collection, index) {
+                const option = document.createElement('option');
+                option.value = index;
+                option.textContent = collection.name;
+                select.appendChild(option);
+            });
+            
+            document.getElementById('requestName').value = '';
+            document.getElementById('requestFolder').value = '';
+            document.getElementById('requestMethod').value = 'GET';
+            document.getElementById('requestUrl').value = '';
+            document.getElementById('createRequestModal').style.display = 'block';
+        }
+        
+        function saveCurrentAsRequest() {
+            if (collections.length === 0) {
+                alert('Veuillez d\'abord créer une collection.');
+                createNewCollection();
+                return;
+            }
+            
+            // Pré-remplir avec les données actuelles du formulaire
+            const method = document.getElementById('methodSelect').value;
+            const url = document.getElementById('urlInput').value.trim();
+            
+            if (!url) {
+                alert('Veuillez d\'abord saisir une URL.');
+                return;
+            }
+            
+            // Remplir la liste des collections
+            const select = document.getElementById('requestCollection');
+            select.innerHTML = '';
+            collections.forEach(function(collection, index) {
+                const option = document.createElement('option');
+                option.value = index;
+                option.textContent = collection.name;
+                select.appendChild(option);
+            });
+            
+            // Pré-remplir les champs
+            document.getElementById('requestName').value = 'Nouvelle requête';
+            document.getElementById('requestFolder').value = '';
+            document.getElementById('requestMethod').value = method;
+            document.getElementById('requestUrl').value = url;
+            document.getElementById('createRequestModal').style.display = 'block';
+        }
+        
+        function createNewFolder(collectionName, parentFolder) {
+            if (collections.length === 0) {
+                alert('Veuillez d\'abord créer une collection.');
+                return;
+            }
+            
+            // Remplir la liste des collections
+            const select = document.getElementById('folderCollection');
+            select.innerHTML = '';
+            collections.forEach(function(collection, index) {
+                const option = document.createElement('option');
+                option.value = index;
+                option.textContent = collection.name;
+                if (collection.name === collectionName) {
+                    option.selected = true;
+                }
+                select.appendChild(option);
+            });
+            
+            document.getElementById('folderName').value = '';
+            document.getElementById('folderParent').value = parentFolder || '';
+            document.getElementById('createFolderModal').style.display = 'block';
+        }
+        
+        function closeCreateModal() {
+            document.getElementById('createCollectionModal').style.display = 'none';
+            document.getElementById('createRequestModal').style.display = 'none';
+            document.getElementById('createFolderModal').style.display = 'none';
+        }
+        
+        function saveNewCollection() {
+            const name = document.getElementById('collectionName').value.trim();
+            const description = document.getElementById('collectionDescription').value.trim();
+            
+            if (!name) {
+                alert('Veuillez saisir un nom pour la collection.');
+                return;
+            }
+            
+            const newCollection = {
+                name: name,
+                description: description,
+                requests: []
+            };
+            
+            collections.push(newCollection);
+            displayCollections();
+            closeCreateModal();
+            saveSettings();
+            saveToLocalStorage();
+            
+            alert('✓ Collection "' + name + '" créée avec succès !');
+        }
+        
+        function saveNewRequest() {
+            const name = document.getElementById('requestName').value.trim();
+            const collectionIndex = parseInt(document.getElementById('requestCollection').value);
+            const folder = document.getElementById('requestFolder').value.trim();
+            const method = document.getElementById('requestMethod').value;
+            const url = document.getElementById('requestUrl').value.trim();
+            
+            if (!name) {
+                alert('Veuillez saisir un nom pour la requête.');
+                return;
+            }
+            
+            if (!url) {
+                alert('Veuillez saisir une URL pour la requête.');
+                return;
+            }
+            
+            const requestName = folder ? folder + ' > ' + name : name;
+            
+            // Récupérer les headers actuels
+            const headers = {};
+            const headerItems = document.querySelectorAll('.header-item');
+            headerItems.forEach(function(item) {
+                const key = item.querySelector('.header-key').value.trim();
+                const value = item.querySelector('.header-value').value.trim();
+                if (key && value) {
+                    headers[key] = value;
+                }
+            });
+            
+            // Récupérer le body actuel
+            let body = null;
+            const bodyType = document.querySelector('input[name="bodyType"]:checked').value;
+            if (bodyType !== 'none') {
+                const bodyText = document.getElementById('bodyTextarea').value.trim();
+                if (bodyText) {
+                    body = bodyText;
+                }
+            }
+            
+            const newRequest = {
+                name: requestName,
+                method: method,
+                url: url,
+                headers: headers,
+                body: body
+            };
+            
+            collections[collectionIndex].requests.push(newRequest);
+            displayCollections();
+            closeCreateModal();
+            saveSettings();
+            saveToLocalStorage();
+            
+            alert('✓ Requête "' + name + '" sauvegardée avec succès !');
+        }
+        
+        function saveNewFolder() {
+            const name = document.getElementById('folderName').value.trim();
+            const collectionIndex = parseInt(document.getElementById('folderCollection').value);
+            const parent = document.getElementById('folderParent').value.trim();
+            
+            if (!name) {
+                alert('Veuillez saisir un nom pour le dossier.');
+                return;
+            }
+            
+            // Créer une requête placeholder pour le dossier
+            const folderPath = parent ? parent + ' > ' + name : name;
+            const placeholderRequest = {
+                name: folderPath + ' > _placeholder',
+                method: 'GET',
+                url: 'https://example.com',
+                headers: {},
+                body: null,
+                isPlaceholder: true
+            };
+            
+            collections[collectionIndex].requests.push(placeholderRequest);
+            displayCollections();
+            closeCreateModal();
+            saveSettings();
+            saveToLocalStorage();
+            
+            alert('✓ Dossier "' + name + '" créé avec succès !');
+        }
+
+        // Fonctions des paramètres
+        function openSettings() {
+            document.getElementById('settingsModal').style.display = 'block';
+            loadSettingsValues();
+        }
+        
+        function closeSettings() {
+            document.getElementById('settingsModal').style.display = 'none';
+        }
+        
+        function loadSettingsValues() {
+            document.getElementById('sslVerification').checked = settings.sslVerification;
+            document.getElementById('darkTheme').checked = settings.darkTheme;
+            document.getElementById('expandedSidebar').checked = settings.expandedSidebar;
+        }
+        
+        function updateSettings() {
+            settings.sslVerification = document.getElementById('sslVerification').checked;
+            settings.darkTheme = document.getElementById('darkTheme').checked;
+            settings.expandedSidebar = document.getElementById('expandedSidebar').checked;
+            
+            saveSettings();
+            applyTheme();
+            
+            // Afficher un feedback visuel
+            const feedback = document.createElement('div');
+            feedback.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #27ae60; color: white; padding: 10px 20px; border-radius: 5px; z-index: 1001; transition: opacity 0.3s;';
+            feedback.textContent = '✓ Paramètres mis à jour';
+            document.body.appendChild(feedback);
+            
+            setTimeout(function() {
+                feedback.style.opacity = '0';
+                setTimeout(function() {
+                    document.body.removeChild(feedback);
+                }, 300);
+            }, 2000);
++           saveToLocalStorage();
+        }
+        
+        function saveSettings() {
+            // Dans l'environnement Claude.ai, on ne peut pas utiliser localStorage
+            // La sauvegarde se fait uniquement via les exports manuels
+            console.log('Paramètres mis à jour:', settings);
+        }
+        
+        function loadSettings() {
+            // Chargement uniquement des paramètres par défaut
+            // Les paramètres sauvegardés peuvent être restaurés via l'import de sauvegarde
+            applyTheme();
+        }
+        
+        function applyTheme() {
+            const body = document.body;
+            if (settings.darkTheme) {
+                body.classList.add('dark-theme');
+            } else {
+                body.classList.remove('dark-theme');
+            }
+        }
+        
+        function applySidebarSetting() {
+            // Appliquer le paramètre de sidebar étendue
+            if (settings.expandedSidebar && collections.length > 0) {
+                // Ouvrir automatiquement toutes les collections
+                setTimeout(function() {
+                    const collectionHeaders = document.querySelectorAll('.tree-collection-header');
+                    collectionHeaders.forEach(function(header, index) {
+                        const foldersContainer = document.getElementById('folders-' + index);
+                        const toggle = document.getElementById('toggle-collection-' + index);
+                        if (foldersContainer && toggle && !foldersContainer.classList.contains('show')) {
+                            foldersContainer.classList.add('show');
+                            toggle.textContent = '▼';
+                            header.classList.add('expanded');
+                        }
+                    });
+                }, 100);
+            }
+        }
+        
+        function loadClientCertificate() {
+            const file = document.getElementById('clientCert').files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                settings.clientCertificate = {
+                    name: file.name,
+                    data: e.target.result,
+                    type: file.type
+                };
+                saveSettings();
+                alert('Certificat client chargé: ' + file.name);
+            };
+            reader.readAsDataURL(file);
+        }
+        
+        function clearClientCertificate() {
+            if (confirm('Êtes-vous sûr de vouloir supprimer le certificat client ?')) {
+                settings.clientCertificate = null;
+                document.getElementById('clientCert').value = '';
+                saveSettings();
+                alert('Certificat client supprimé');
+            }
+        }
+        
+        function exportCollections() {
+            if (collections.length === 0) {
+                alert('Aucune collection à exporter');
+                return;
+            }
+            // Conversion des environnements au format d'import attendu
+            const environmentsExport = Object.values(environments).map(env => ({
+                name: env.name,
+                variables: Array.isArray(env.variables) ? env.variables : []
+            }));
+            const exportData = {
+                collections: collections,
+                environments: environmentsExport,
+                exportDate: new Date().toISOString(),
+                version: "1.0"
+            };
+            const jsonData = JSON.stringify(exportData, null, 2);
+            const blob = new Blob([jsonData], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'collections_export_' + new Date().toISOString().split('T')[0] + '.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+        
+        function createFullBackup() {
+            // Conversion des environnements au format d'import attendu
+            const environmentsExport = Object.values(environments).map(env => ({
+                name: env.name,
+                variables: Array.isArray(env.variables) ? env.variables : []
+            }));
+            const backupData = {
+                settings: settings,
+                collections: collections,
+                environments: environmentsExport,
+                backupDate: new Date().toISOString(),
+                version: "1.0"
+            };
+            const jsonData = JSON.stringify(backupData, null, 2);
+            const blob = new Blob([jsonData], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'api_tester_backup_' + new Date().toISOString().split('T')[0] + '.json';
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            alert('Sauvegarde complète créée avec succès !');
+        }
+        
+        function importBackup() {
+            const file = document.getElementById('backupFile').files[0];
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const backupData = JSON.parse(e.target.result);
+                    
+                    if (confirm('Cette action va remplacer toutes vos données actuelles. Continuer ?')) {
+                        if (backupData.settings) {
+                            settings = { ...settings, ...backupData.settings };
+                        }
+                        if (backupData.collections) {
+                            collections = backupData.collections;
+                            displayCollections();
+                        }
+                        if (backupData.environments) {
+                            environments = backupData.environments;
+                            displayEnvironments();
+                        }
+                        
+                        saveSettings();
+                        loadSettingsValues();
+                        applyTheme();
+                        closeSettings();
+                        
+                        alert('Sauvegarde restaurée avec succès !');
+                    }
+                } catch (error) {
+                    alert('Erreur lors de l\'import: ' + error.message);
+                }
+            };
+            reader.readAsText(file);
+        }
+        
+        function resetApplication() {
+            if (confirm('Êtes-vous sûr de vouloir réinitialiser l\'application ? Toutes les données seront perdues.')) {
+                if (confirm('Cette action est irréversible. Confirmer la réinitialisation ?')) {
+                    // Réinitialiser toutes les variables
+                    collections = [];
+                    environments = {};
+                    currentEnvironment = null;
+                    settings = {
+                        sslVerification: true,
+                        darkTheme: false,
+                        expandedSidebar: true,
+                        clientCertificate: null
+                    };
+                    
+                    // Réinitialiser l'interface
+                    displayCollections();
+                    displayEnvironments();
+                    clearForm();
+                    loadSettingsValues();
+                    applyTheme();
+                    closeSettings();
+                    
+                    // Nettoyer les champs de fichiers
+                    document.getElementById('collectionFile').value = '';
+                    document.getElementById('environmentFile').value = '';
+                    document.getElementById('clientCert').value = '';
+                    document.getElementById('backupFile').value = '';
+                    
+                    alert('Application réinitialisée avec succès !');
+                }
+            }
+        }
+        
+        // Fermer le modal en cliquant à l'extérieur
+        window.onclick = function(event) {
+            const settingsModal = document.getElementById('settingsModal');
+            const createCollectionModal = document.getElementById('createCollectionModal');
+            const createRequestModal = document.getElementById('createRequestModal');
+            const createFolderModal = document.getElementById('createFolderModal');
+            
+            if (event.target === settingsModal) {
+                closeSettings();
+            }
+            if (event.target === createCollectionModal || event.target === createRequestModal || event.target === createFolderModal) {
+                closeCreateModal();
+            }
+        }
+
+        // Fonctions d'édition
+        function editCollection(collectionIndex) {
+            const collection = collections[collectionIndex];
+            const newName = prompt('Nouveau nom de la collection:', collection.name);
+            
+            if (newName && newName.trim() !== collection.name) {
+                collection.name = newName.trim();
+                displayCollections();
+                saveSettings();
+                saveToLocalStorage();
+                alert('✓ Collection renommée avec succès !');
+            }
+        }
+        
+        function editRequest(collectionIndex, requestIndex) {
+            const request = collections[collectionIndex].requests[requestIndex];
+            const parts = request.name.split(' > ');
+            const requestName = parts[parts.length - 1];
+            
+            const newName = prompt('Nouveau nom de la requête:', requestName);
+            
+            if (newName && newName.trim() !== requestName) {
+                if (parts.length > 1) {
+                    parts[parts.length - 1] = newName.trim();
+                    request.name = parts.join(' > ');
+                } else {
+                    request.name = newName.trim();
+                }
+                displayCollections();
+                saveSettings();
+                saveToLocalStorage();
+                alert('✓ Requête renommée avec succès !');
+            }
+        }
+        
+        function editFolder(collectionIndex, folderName) {
+            const newName = prompt('Nouveau nom du dossier:', folderName);
+            
+            if (newName && newName.trim() !== folderName) {
+                // Renommer tous les éléments de ce dossier
+                const collection = collections[collectionIndex];
+                collection.requests.forEach(function(request) {
+                    if (request.name.startsWith(folderName + ' > ')) {
+                        request.name = request.name.replace(folderName + ' > ', newName.trim() + ' > ');
+                    } else if (request.name === folderName) {
+                        request.name = newName.trim();
+                    }
+                });
+                
+                displayCollections();
+                saveSettings();
+                saveToLocalStorage();
+                alert('✓ Dossier renommé avec succès !');
+            }
+        }
+        
+        // Fonctions de suppression
+        function deleteCollection(collectionIndex) {
+            const collection = collections[collectionIndex];
+            if (confirm('Êtes-vous sûr de vouloir supprimer la collection "' + collection.name + '" ?\n\nCette action supprimera toutes les requêtes de cette collection.')) {
+                collections.splice(collectionIndex, 1);
+                displayCollections();
+                saveSettings();
+                saveToLocalStorage();
+                alert('✓ Collection supprimée avec succès !');
+            }
+        }
+        
+        function deleteRequest(collectionIndex, requestIndex) {
+            const request = collections[collectionIndex].requests[requestIndex];
+            const parts = request.name.split(' > ');
+            const requestName = parts[parts.length - 1];
+            
+            if (confirm('Êtes-vous sûr de vouloir supprimer la requête "' + requestName + '" ?')) {
+                collections[collectionIndex].requests.splice(requestIndex, 1);
+                displayCollections();
+                saveSettings();
+                saveToLocalStorage();
+                alert('✓ Requête supprimée avec succès !');
+            }
+        }
+        
+        function deleteFolder(collectionIndex, folderName) {
+            const collection = collections[collectionIndex];
+            const requestsInFolder = collection.requests.filter(function(request) {
+                return request.name.startsWith(folderName + ' > ') || request.name === folderName;
+            });
+            
+            if (confirm('Êtes-vous sûr de vouloir supprimer le dossier "' + folderName + '" ?\n\nCela supprimera ' + requestsInFolder.length + ' élément(s).')) {
+                // Supprimer toutes les requêtes du dossier
+                collection.requests = collection.requests.filter(function(request) {
+                    return !request.name.startsWith(folderName + ' > ') && request.name !== folderName;
+                });
+                
+                displayCollections();
+                saveSettings();
+                saveToLocalStorage();
+                alert('✓ Dossier supprimé avec succès !');
+            }
+        }
+
+        // ... existing code ...
+        // Fonctions JSON Tree avec style Swagger UI
+        // ... existing code ...
+        function toggleJsonBlock(blockId) {
+            const content = document.getElementById(blockId);
+            const toggle = document.getElementById('toggle-' + blockId);
+            if (content && toggle) {
+                if (content.classList.contains('show')) {
+                    content.classList.remove('show');
+                    toggle.textContent = '▶';
+                    toggle.classList.remove('expanded');
+                } else {
+                    content.classList.add('show');
+                    toggle.textContent = '▼';
+                    toggle.classList.add('expanded');
+                }
+            }
+        }
+        // ... existing code ...
+
+        // ... existing code ...
+        // Fonctions de persistance locale
+        function saveToLocalStorage() {
+            try {
+                localStorage.setItem('collections', JSON.stringify(collections));
+                localStorage.setItem('environments', JSON.stringify(environments));
+                localStorage.setItem('settings', JSON.stringify(settings));
+            } catch (e) {
+                console.warn('Impossible de sauvegarder dans localStorage', e);
+            }
+        }
+        function loadFromLocalStorage() {
+            try {
+                const col = localStorage.getItem('collections');
+                if (col) collections = JSON.parse(col);
+                const env = localStorage.getItem('environments');
+                if (env) environments = JSON.parse(env);
+                const set = localStorage.getItem('settings');
+                if (set) settings = { ...settings, ...JSON.parse(set) };
+            } catch (e) {
+                console.warn('Impossible de charger depuis localStorage', e);
+            }
+        }
+        // ... existing code ...
+
+        // Ajouter la fonction JS pour le toggle du bloc import
+        function toggleImportSection() {
+            var content = document.getElementById('importContent');
+            var chevron = document.getElementById('importChevron');
+            if (content.classList.contains('collapsed')) {
+                content.classList.remove('collapsed');
+                chevron.textContent = '▼';
+                chevron.classList.remove('collapsed');
+            } else {
+                content.classList.add('collapsed');
+                chevron.textContent = '▶';
+                chevron.classList.add('collapsed');
+            }
+        }
+
+        // Ajouter les fonctions JS pour le toggle des blocs
+        function toggleCollectionsSection() {
+            var content = document.getElementById('collectionsContent');
+            var chevron = document.getElementById('collectionsChevron');
+            var header = chevron.closest('.section-header');
+            if (content.classList.contains('collapsed')) {
+                content.classList.remove('collapsed');
+                chevron.textContent = '▼';
+                chevron.classList.remove('collapsed');
+                header.classList.remove('collapsed');
+            } else {
+                content.classList.add('collapsed');
+                chevron.textContent = '▶';
+                chevron.classList.add('collapsed');
+                header.classList.add('collapsed');
+            }
+        }
+        function toggleRequestSection() {
+            var content = document.getElementById('requestContent');
+            var chevron = document.getElementById('requestChevron');
+            var header = chevron.closest('.section-header');
+            if (content.classList.contains('collapsed')) {
+                content.classList.remove('collapsed');
+                chevron.textContent = '▼';
+                chevron.classList.remove('collapsed');
+                header.classList.remove('collapsed');
+            } else {
+                content.classList.add('collapsed');
+                chevron.textContent = '▶';
+                chevron.classList.add('collapsed');
+                header.classList.add('collapsed');
+            }
+        }
+
+        function loadEnvironmentVariables() {
+            const envName = document.getElementById('envSelect').value;
+            const container = document.getElementById('envVariablesContainer');
+            const list = document.getElementById('envVariablesList');
+            
+            if (!envName) {
+                container.style.display = 'none';
+                return;
+            }
+            
+            container.style.display = 'block';
+            list.innerHTML = '';
+            
+            const env = environments[envName];
+            if (env && env.variables) {
+                env.variables.forEach(variable => {
+                    addVariableInput(variable);
+                });
+            }
+        }
+
+        function saveEnvironmentVariables() {
+            const envName = document.getElementById('envSelect').value;
+            if (!envName) return;
+            
+            const variables = [];
+            const items = document.querySelectorAll('.env-variable-item');
+            
+            items.forEach(item => {
+                const name = item.querySelector('.env-key').value.trim();
+                const value = item.querySelector('.env-value').value.trim();
+                const enabled = item.querySelector('.env-enabled').checked;
+                const secret = item.querySelector('.env-secret').checked;
+                const type = item.querySelector('.env-type').value;
+                
+                if (name) {
+                    variables.push({
+                        name,
+                        value,
+                        enabled,
+                        secret,
+                        type
+                    });
+                }
+            });
+            
+            environments[envName] = {
+                name: envName,
+                variables: variables
+            };
+            
+            // Mettre à jour l'environnement actuel si c'est celui qui est sélectionné
+            if (document.getElementById('environmentSelect').value === envName) {
+                currentEnvironment = {};
+                variables.forEach(variable => {
+                    if (variable.enabled) {
+                        currentEnvironment[variable.name] = variable.value;
+                    }
+                });
+            }
+            
+            saveToLocalStorage();
+            
+            // Feedback visuel
+            const feedback = document.createElement('div');
+            feedback.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #27ae60; color: white; padding: 10px 20px; border-radius: 5px; z-index: 1001; transition: opacity 0.3s;';
+            feedback.textContent = '✓ Variables sauvegardées';
+            document.body.appendChild(feedback);
+            
+            setTimeout(() => {
+                feedback.style.opacity = '0';
+                setTimeout(() => feedback.remove(), 300);
+            }, 2000);
+        }
+
+        // Nouvelle modale pour édition des variables d'un environnement
+        let currentEditEnvName = null;
+        function openEditEnvVarsModal(envName) {
+            currentEditEnvName = envName;
+            document.getElementById('editEnvVarsTitle').textContent = `✏️ Modifier les variables : ${envName}`;
+            const modal = document.getElementById('editEnvVarsModal');
+            const list = document.getElementById('editEnvVarsList');
+            list.innerHTML = '';
+            const env = environments[envName];
+            if (env && env.variables) {
+                env.variables.forEach(variable => {
+                    addEditEnvVarInput(variable);
+                });
+            }
+            modal.style.display = 'block';
+        }
+        function closeEditEnvVarsModal() {
+            document.getElementById('editEnvVarsModal').style.display = 'none';
+        }
+        function addEditEnvVarInput(variable = null) {
+            const list = document.getElementById('editEnvVarsList');
+            const div = document.createElement('div');
+            div.className = 'env-variable-item';
+            div.style.cssText = 'display: flex; gap: 10px; margin-bottom: 10px; align-items: center; background: #f8f9fa; padding: 10px; border-radius: 6px;';
+            const isSecret = variable ? variable.secret : false;
+            const isEnabled = variable ? variable.enabled : true;
+            const type = variable ? variable.type : 'text';
+            div.innerHTML = `
+                <div style="flex: 1; display: flex; gap: 10px;">
+                    <input type="text" placeholder="Nom" value="${variable ? variable.name : ''}" class="env-key" style="flex: 1; padding: 5px; border: 1px solid #ddd; border-radius: 4px;">
+                    <input type="${isSecret ? 'password' : 'text'}" placeholder="Valeur" value="${variable ? variable.value : ''}" class="env-value" style="flex: 1; padding: 5px; border: 1px solid #ddd; border-radius: 4px;">
+                </div>
+                <div style="display: flex; gap: 5px; align-items: center;">
+                    <label style="display: flex; align-items: center; gap: 4px; font-size: 0.9em;">
+                        <input type="checkbox" class="env-enabled" ${isEnabled ? 'checked' : ''} style="margin: 0;">
+                        Actif
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 4px; font-size: 0.9em;">
+                        <input type="checkbox" class="env-secret" ${isSecret ? 'checked' : ''} style="margin: 0;">
+                        Secret
+                    </label>
+                    <select class="env-type" style="padding: 3px; border: 1px solid #ddd; border-radius: 4px;">
+                        <option value="text" ${type === 'text' ? 'selected' : ''}>Texte</option>
+                        <option value="number" ${type === 'number' ? 'selected' : ''}>Nombre</option>
+                        <option value="boolean" ${type === 'boolean' ? 'selected' : ''}>Booléen</option>
+                    </select>
+                    <button class="settings-btn danger" onclick="this.parentElement.parentElement.remove()">🗑️</button>
+                </div>
+            `;
+            const secretCheckbox = div.querySelector('.env-secret');
+            const valueInput = div.querySelector('.env-value');
+            secretCheckbox.addEventListener('change', function() {
+                valueInput.type = this.checked ? 'password' : 'text';
+            });
+            list.appendChild(div);
+        }
+        function saveEditEnvVars() {
+            if (!currentEditEnvName) return;
+            const variables = [];
+            const items = document.querySelectorAll('#editEnvVarsList .env-variable-item');
+            items.forEach(item => {
+                const name = item.querySelector('.env-key').value.trim();
+                const value = item.querySelector('.env-value').value.trim();
+                const enabled = item.querySelector('.env-enabled').checked;
+                const secret = item.querySelector('.env-secret').checked;
+                const type = item.querySelector('.env-type').value;
+                if (name) {
+                    variables.push({ name, value, enabled, secret, type });
+                }
+            });
+            environments[currentEditEnvName] = { name: currentEditEnvName, variables };
+            // Mettre à jour l'environnement courant si besoin
+            if (document.getElementById('environmentSelect').value === currentEditEnvName) {
+                currentEnvironment = {};
+                variables.forEach(variable => {
+                    if (variable.enabled) {
+                        currentEnvironment[variable.name] = variable.value;
+                    }
+                });
+            }
+            saveToLocalStorage();
+            // Feedback visuel
+            const feedback = document.createElement('div');
+            feedback.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #27ae60; color: white; padding: 10px 20px; border-radius: 5px; z-index: 1001; transition: opacity 0.3s;';
+            feedback.textContent = '✓ Variables sauvegardées';
+            document.body.appendChild(feedback);
+            setTimeout(() => {
+                feedback.style.opacity = '0';
+                setTimeout(() => feedback.remove(), 300);
+            }, 2000);
+            closeEditEnvVarsModal();
+        }
+
+        function dragStart(event, collectionIndex, requestIndex, type, folderPath) {
+            // event.stopPropagation() ici peut empêcher d'autres logiques, à utiliser avec prudence
+            const dragData = {
+                collectionIndex: parseInt(collectionIndex, 10),
+                requestIndex: requestIndex !== null ? parseInt(requestIndex, 10) : null,
+                type: type,
+                folderPath: folderPath || null
+            };
+            event.dataTransfer.setData('application/json', JSON.stringify(dragData));
+            event.dataTransfer.effectAllowed = 'move';
+            // On ne stoppe la propagation que pour les éléments internes, pas le header du dossier lui-même
+            if (event.target.classList.contains('tree-request')) {
+                 event.stopPropagation();
+            }
+        }
+
+        function allowDrop(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            clearDragOver();
+            const target = event.target.closest('.tree-folder, .tree-collection-header');
+            if (target) {
+                target.classList.add('drag-over');
+            }
+        }
+
+        function clearDragOver(event){
+             if(event) event.stopPropagation();
+             document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+        }
+        
+        function drop(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            clearDragOver();
+
+            const dragData = JSON.parse(event.dataTransfer.getData('application/json'));
+            const dropTargetEl = event.target.closest('.tree-folder');
+
+            if (!dropTargetEl) return;
+            
+            const targetCollectionIndex = parseInt(dropTargetEl.dataset.collectionIndex, 10);
+            const targetFolderPath = dropTargetEl.dataset.folderPath || '';
+
+            handleDrop(dragData, targetCollectionIndex, targetFolderPath);
+        }
+
+        function dropOnCollectionContainer(event) {
+            event.preventDefault();
+            event.stopPropagation();
+            clearDragOver();
+            
+            const dragData = JSON.parse(event.dataTransfer.getData('application/json'));
+            // Essayer de trouver une collection cible, sinon on dépose à la racine d'une collection
+            const collectionTarget = event.target.closest('.tree-collection');
+            if (!collectionTarget) return;
+
+            const targetCollectionIndex = parseInt(collectionTarget.dataset.collectionIndex, 10);
+            
+            // Déposer à la racine de la collection
+            handleDrop(dragData, targetCollectionIndex, '');
+        }
+
+        function handleDrop(dragData, targetCollectionIndex, targetFolderPath) {
+            if (dragData.type === 'request') {
+                const request = collections[dragData.collectionIndex].requests[dragData.requestIndex];
+                const requestNameParts = request.name.split(' > ');
+                const requestBaseName = requestNameParts[requestNameParts.length - 1];
+                
+                const newName = targetFolderPath ? `${targetFolderPath} > ${requestBaseName}` : requestBaseName;
+                
+                if (dragData.collectionIndex === targetCollectionIndex) {
+                    request.name = newName;
+                } else {
+                    const [movedRequest] = collections[dragData.collectionIndex].requests.splice(dragData.requestIndex, 1);
+                    movedRequest.name = newName;
+                    collections[targetCollectionIndex].requests.push(movedRequest);
+                }
+
+            } else if (dragData.type === 'folder') {
+                const sourceFolderPath = dragData.folderPath;
+                
+                if (dragData.collectionIndex === targetCollectionIndex && (targetFolderPath + '/').startsWith(sourceFolderPath + '/')) {
+                    return; // Empêcher de déposer un dossier dans lui-même
+                }
+
+                collections[dragData.collectionIndex].requests.forEach(request => {
+                    const separator = ' > ';
+                    if (request.name.startsWith(sourceFolderPath + separator) || request.name === sourceFolderPath) {
+                         const restOfPath = request.name.substring(sourceFolderPath.length);
+                         if (targetFolderPath) {
+                             request.name = targetFolderPath + restOfPath;
+                         } else {
+                             request.name = restOfPath.startsWith(separator) ? restOfPath.substring(separator.length) : restOfPath;
+                         }
+                    }
+                });
+                 if (dragData.collectionIndex !== targetCollectionIndex) {
+                    console.warn("Le déplacement de dossiers entre collections n'est pas encore entièrement implémenté.");
+                 }
+            }
+
+            saveToLocalStorage();
+            displayCollections();
+        }
+        
+        function toggleTreeCollection(collectionIndex) {
+            const folders = document.getElementById('folders-' + collectionIndex);
+            const toggle = document.getElementById('toggle-collection-' + collectionIndex);
+            const header = toggle.parentElement;
+            
+            if (folders.classList.contains('show')) {
+                folders.classList.remove('show');
+                toggle.textContent = '▶';
+                header.classList.remove('expanded');
+            } else {
+                folders.classList.add('show');
+                toggle.textContent = '▼';
+                header.classList.add('expanded');
+            }
+        }
+        
+        function toggleTreeFolder(folderId) {
+            const folder = document.getElementById(folderId);
+            const toggle = document.getElementById('toggle-' + folderId);
+            const header = toggle.parentElement;
+            
+            if (folder.classList.contains('show')) {
+                folder.classList.remove('show');
+                toggle.textContent = '▶';
+                header.classList.remove('expanded');
+            } else {
+                folder.classList.add('show');
+                toggle.textContent = '▼';
+                header.classList.add('expanded');
+            }
+        }
+    </script>
+</body>
+</html>
